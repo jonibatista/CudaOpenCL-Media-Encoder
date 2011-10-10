@@ -1,0 +1,11 @@
+# Folders #
+###########
+Dicts/
+Examples---PGM/
+Training_pgm/
+
+# Compiled source #
+###################
+*.o
+*.exe
+
