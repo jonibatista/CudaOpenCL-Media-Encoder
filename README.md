@@ -1,3 +1,6 @@
+Cuda Media Encode
+===================
+
 A codificação de conteúdos multimédia (imagens, video e som) é determinante, pois permite reduzir o
 tamanho dos conteúdos, o que reduz significativamente custos no armazenamento e transmissão dos
 conteúdos. Contudo, a codificação de conteúdos acarreta custos computacionais significativos, tanto nas
