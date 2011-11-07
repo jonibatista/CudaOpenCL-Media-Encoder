@@ -523,28 +523,21 @@ int **intmatrix(int nr, int nc)
   return m;
 }
 
-
-float **floatmatrix(int nr, int nc)
+int **intmatrix2(int nr, int nc)
 {
-  int i;
-  float **m;
-  
-  m=(float **)malloc(nr*nc*sizeof(float *));
-  if (!m){
-    printf("floatmatrix() - allocation failure 1 \n");
-    exit(1);
-  }
-  
-  for(i=0;i<nr;i++) {
-    m[i]=(float *)calloc(nc, sizeof(float));
-    if (!m[i]){
-      printf("floatmatrix() - allocation failure 2 \n");
-      exit(1);
+    int i;
+    int vector = (int *) malloc (nr*sizeof(int *));
+     for(i=0;i<nr;i++) {
+        // vector[i]=&(bloco[i*nc]);
     }      
-  }
-
-  return m;
+  
+    // aceder a um bloco
+    // bloco [r*nc+c]
+        return 0;
 }
+
+
+
 
 
 /************************************************************************************/
