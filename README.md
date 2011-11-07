@@ -8,7 +8,21 @@ codificação como na descodificação. Diga se que se tolera melhor um algoritm
 Diga-se computacionalmente oneroso, mas cujo processo de descodificação seja relativemente leve. A razão deriva
 do facto que um conteúdo ser codificado apenas uma vez (na criação), mas descodificado inúmeras vezes,
 (por exemplo, um video do YouTube ou uma imagem JPEG/PNG/etc., codificados na criação e JPEG/PNG/etc.,
-descodificados sempre que é solicitado o seu visionamento visionamento).
+descodificados sempre que é solicitado o seu visionamento).
 Neste projeto pretende-se adaptar uma implementação do algoritmo Vector Quantization (disponível
 tar sobre a forma de código fonte C) C)(Vector Quantization) ao paradigma de programação manycore
 computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
+
+Alterações Codificador
+----------
+int **Image_orig;
+int **Image_out;
+int ysize[1], xsize[1];           /* The dimensions of the original image */
+
+Eram globais e não havia necessidade
+
+
+
+
+Alterações no Descodificador
+--------------

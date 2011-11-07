@@ -77,9 +77,11 @@ static int bits_to_go;		    /* Number of bits still in buffer	        */
 long Bits_Count;
 
 
+/*
 int **Image_orig;
 int **Image_out;
-int ysize[1], xsize[1];           /* The dimensions of the original image */
+int ysize[1], xsize[1];           // The dimensions of the original image 
+*/
 
 /*
  * The following variables are loaded from the dictionary  file
@@ -110,6 +112,11 @@ char *inname, *outname, *dic_name;			//Nome dos ficheiros de input e output
 //******************************************************************************
 int main(int argc, char *argv[])
 {
+    
+        int **Image_orig;
+        int **Image_out;
+        int ysize[1], xsize[1];           /* The dimensions of the original image */
+
 	int **Image;
 	int num_blocos;
 
@@ -526,7 +533,7 @@ int **intmatrix(int nr, int nc)
 int **intmatrix2(int nr, int nc)
 {
     int i;
-    int vector = (int *) malloc (nr*sizeof(int *));
+    int vector = (int **) malloc (nr*sizeof(int *));
      for(i=0;i<nr;i++) {
         // vector[i]=&(bloco[i*nc]);
     }      
