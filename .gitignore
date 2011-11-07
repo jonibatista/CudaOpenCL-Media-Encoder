@@ -1,8 +1,11 @@
 # Folders #
 ###########
-#Dicts/
 Examples---PGM/
 Training_pgm/
+
+# System Files #
+################
+.directory
 
 # Compiled source #
 ###################
