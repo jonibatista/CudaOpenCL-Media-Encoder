@@ -21,3 +21,4 @@ Alterações Codificador
 
 Eram globais e não havia necessidade
 
+	void start_outputting_bits(); // removeu-se esta função desnecessária
