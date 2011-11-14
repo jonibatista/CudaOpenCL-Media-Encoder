@@ -15,14 +15,9 @@ computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 
 Alterações Codificador
 ----------
-int **Image_orig;
-int **Image_out;
-int ysize[1], xsize[1];           /* The dimensions of the original image */
+	int **Image_orig;
+	int **Image_out;
+	int ysize[1], xsize[1];           /* The dimensions of the original image */
 
 Eram globais e não havia necessidade
 
-
-
-
-Alterações no Descodificador
---------------
