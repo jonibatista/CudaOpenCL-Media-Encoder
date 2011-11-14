@@ -7,9 +7,7 @@ DictsDir=../Dicts
 CodedDir=../Coded
 DictFName=dic_1024_4x4
 
-Files_L="Informatica_e_no_IPL---cartaz
-ILikeEI
-testPatterns_1024"
+Files_L="ILikeEI"
 
 for File in $Files_L
 do
