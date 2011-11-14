@@ -13,6 +13,10 @@ testPatterns_1024"
 
 for File in $Files_L
 do
+
+
+# calculate CHECKSUM
+
 	InputFName=$File
 	InputFName_PGM=$InputFName.pgm
 	echo "================================================================="

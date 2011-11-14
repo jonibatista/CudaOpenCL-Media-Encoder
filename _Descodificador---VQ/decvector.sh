@@ -19,6 +19,6 @@ do
 	OriginalFName=${BaseFName}.pgm
 
 	# 4x4
-	./decvector $CodedDir/${BaseFName}_${DictFName}.coded $DictsDir/$DictFName ${BaseFName}.rec.pgm $InputDir_PGM/$BaseFName.pgm
+	./decvector $CodedDir/${BaseFName}_${DictFName}.coded $DictsDir/$DictFName ../Decoded/${BaseFName}.rec.pgm $InputDir_PGM/$BaseFName.pgm
 
 done
