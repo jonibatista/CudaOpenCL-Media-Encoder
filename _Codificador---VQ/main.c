@@ -80,6 +80,7 @@ float **floatmatrix(int nr, int nc);
 int *int_vector(int nr, int nc);
 float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *original_block);
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
+void my_load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel);
 double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel);
 void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, int *buffer, FILE *pointf_out);
@@ -97,6 +98,7 @@ void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go);
 ///*                              GLOBAL VARIABLES                          *///
 ///**************************************************************************///
 int **G_dic;
+int *G_dic_my;
 
 //******************************************************************************
 //*                                                                            *
@@ -110,7 +112,7 @@ int main(int argc, char *argv[]) {
     int *v_pgm, *v_pgm_coded;
 
     struct gengetopt_args_info args_info;
-  
+
     int *original_block;
 
     int i, j, i1, j1, n;
@@ -146,10 +148,9 @@ int main(int argc, char *argv[]) {
 
 
 
-// validate parameters
-  if (cmdline_parser (argc, argv, &args_info) != 0)
-    {
-      exit (ERROR_INVALID_PARAMETERS);
+    // validate parameters
+    if (cmdline_parser(argc, argv, &args_info) != 0) {
+        exit(ERROR_INVALID_PARAMETERS);
     }
 
     inname = args_info.imagem_arg;
@@ -158,7 +159,7 @@ int main(int argc, char *argv[]) {
 
 
     //Carrega dicionario
-    load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
+    my_load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
     bits_index = ceil(log(num_codewords) / log(2));
 
     original_block = (int *) calloc(block_size_x*block_size_y, sizeof (int));
@@ -176,7 +177,7 @@ int main(int argc, char *argv[]) {
     v_read_file_pgm(v_pgm, &ysize, &xsize, inname);
 
     // create the vector that will contain the coded pgm
-    v_pgm_coded = int_vector(ysize/block_size_y,xsize/block_size_x);
+    v_pgm_coded = int_vector(ysize / block_size_y, xsize / block_size_x);
 
     // old stuff (using matrixes)
     image_orig = int_matrix(ysize, xsize);
@@ -211,7 +212,7 @@ int main(int argc, char *argv[]) {
 
     //Subtrai a média a todos os pixels
     for (i = 0; i < ysize; i++) {
-        for (j = 0; j < xsize; j++){
+        for (j = 0; j < xsize; j++) {
             v_pgm[i * xsize + j] -= average;
         }
     }
@@ -247,12 +248,13 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            v_pgm_coded[(i/block_size_y) * (xsize/block_size_x) + (j/block_size_x)] = index;
+            v_pgm_coded[(i / block_size_y) * (xsize / block_size_x) + (j / block_size_x)] = index;
 
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
                     image_out[i + i1][j + j1] =
-                            G_dic[index][i1 * block_size_x + j1];
+                            //G_dic[index][i1 * block_size_x + j1];
+                            G_dic_my[index * block_size_x + (i1 * block_size_x + j1)];
                 }
             }
 
@@ -260,9 +262,9 @@ int main(int argc, char *argv[]) {
     }
 
     // write the coded pgm to file
-    for(i = 0; i < (ysize/block_size_y); i++){
-        for(j = 0; j < (xsize/block_size_x); j++){
-            write_index(v_pgm_coded[i * (xsize/block_size_x) + j], bits_index, &bits_count, &bits_to_go, &buffer, pointf_out);
+    for (i = 0; i < (ysize / block_size_y); i++) {
+        for (j = 0; j < (xsize / block_size_x); j++) {
+            write_index(v_pgm_coded[i * (xsize / block_size_x) + j], bits_index, &bits_count, &bits_to_go, &buffer, pointf_out);
         }
     }
 
@@ -301,15 +303,16 @@ int main(int argc, char *argv[]) {
     fclose(pointf_out);
 
     // now free the memory
+    for (i = 0; i < ysize; i++) {
+        free(image_orig[i]);
+        free(image_out[i]);
+    }
+
+    free(image_orig);
     free(image_out);
+    free(v_pgm_coded);
 
-            free(v_pgm_coded);
-  
 
-           // free(image_orig);
-            //free(image_out);
-    
-    
     return EXIT_SUCCESS;
 }
 //Fim da funcao main
@@ -337,6 +340,7 @@ void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, i
 //*	e um vector do codebook                                                *
 //*                                                                            *
 //******************************************************************************
+
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
     int i, j;
     FILE *pointf_dic;
@@ -370,6 +374,38 @@ void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int
     fclose(pointf_dic);
 }
 
+void my_load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
+    int i, j;
+    FILE *pointf_dic;
+
+    pointf_dic = fopen(file_name, "r");
+    if (pointf_dic == NULL) {
+        fprintf(stderr, "Impossivel abrir dicionario: %s\n\n", file_name);
+        exit(1);
+    }
+
+    fscanf(pointf_dic, "%d\n", num_codewords);
+    fscanf(pointf_dic, "%d\n", block_size_x);
+    fscanf(pointf_dic, "%d\n", block_size_y);
+
+    printf("\n-----------------------------------------------------");
+    printf("\n Carregou dicionario %s", file_name);
+    printf("\n %d blocos de %dx%d pixels",
+            *num_codewords, *block_size_y, *block_size_x);
+    printf("\n-----------------------------------------------------");
+    fflush(stdout);
+
+    G_dic_my = int_vector(*num_codewords, *block_size_y * (*block_size_x));
+
+    for (i = 0; i<*num_codewords; i++) {
+        for (j = 0; j < *block_size_x * (*block_size_y); j++) {
+            fscanf(pointf_dic, "%d\t", &G_dic_my[i * (*block_size_x * (*block_size_y)) + j]);
+        }
+        (void) fscanf(pointf_dic, "\n");
+    }
+
+    fclose(pointf_dic);
+}
 
 
 //******************************************************************************
@@ -384,8 +420,8 @@ float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *origina
     float tmp = 0;
 
     for (i = 0; i < *block_size_x * (*block_size_y); i++) {
-        tmp += ((G_dic[index_dic][i] - original_block[i]) *
-                (G_dic[index_dic][i] - original_block[i]));
+        tmp += ((G_dic_my[index_dic * (*block_size_x * (*block_size_y)) + i] - original_block[i]) *
+                (G_dic_my[index_dic * (*block_size_x * (*block_size_y)) + i]  - original_block[i]));
     }
     return tmp;
 } /* Enf of quad_err */
@@ -417,6 +453,7 @@ void help(char *prgname) {
 /*                                                                                  */
 
 /************************************************************************************/
+
 /**
  *  <p> Reads the information of a pgm file to calculate the horizontal and vertical size.</p>
  * 
@@ -462,7 +499,6 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
 }
 
 /* End of read_header_pgm function */
-
 
 /**
  *
@@ -634,7 +670,6 @@ float **floatmatrix(int nr, int nc) {
     return m;
 }
 
-
 int *int_vector(int nr, int nc) {
     int *v;
 
@@ -649,6 +684,7 @@ int *int_vector(int nr, int nc) {
 
 /************************************************************************************/
 /* Peak Signal Noise Ratio                                                          */
+
 /************************************************************************************/
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
