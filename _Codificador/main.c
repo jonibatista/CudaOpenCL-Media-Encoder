@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+/*//////////////////////////////////////////////////////////////////////////
  *   Copyright (C) 2008 by Nelson Carreira Francisco                       *
  *   eng.nelsito@gmail.com                                                 *
  *                                                                         *
@@ -69,6 +69,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///                           PROTOTYPES DEFINITION                          ///
 ////////////////////////////////////////////////////////////////////////////////
+
 void read_header_pgm(int *ysize, int *xsize, char *file_name);
 void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
 void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name);
