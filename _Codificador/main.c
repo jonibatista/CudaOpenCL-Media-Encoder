@@ -1,4 +1,4 @@
-/***************************************************************************
+///////////////////////////////////////////////////////////////////////////
  *   Copyright (C) 2008 by Nelson Carreira Francisco                       *
  *   eng.nelsito@gmail.com                                                 *
  *                                                                         *
@@ -16,13 +16,13 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
+ ////////////////////////////////////////////////////////////////////////// /
 
-/***************************************************************************
+///////////////////////////////////////////////////////////////////////////
  *   Implementacaoo de um codificador de imagens baseado em                *
  *   Quantificacao vectorial                                                *
  *   Nelson Carreira Francisco                                              *
- ****************************************************************************/
+ ////////////////////////////////////////////////////////////////////////// */
 
 
 #ifdef HAVE_CONFIG_H
@@ -45,32 +45,30 @@
 #include "params.h"
 
 
-///**************************************************************************///
-///*                        CONSTANTS ERROR                                 *///
-///**************************************************************************///
+////////////////////////////////////////////////////////////////////////////////
+///                         CONSTANTS ERROR                                  ///
+////////////////////////////////////////////////////////////////////////////////
 #define ERROR_INVALID_PARAMETERS 1
 #define ERROR_ALLOCATE_MEMORY 2
 #define ERROR_OPEN_FILE
 #define ERROR_INVALID_PARAMETERS 1
 
 
-///******************* END CONSTANTES ERROR DEFINITION **********************///
 
-
-///**************************************************************************///
-///*                             CONSTANTS                                  *///
-///**************************************************************************///
+////////////////////////////////////////////////////////////////////////////////
+///                              CONSTANTS                                   ///
+////////////////////////////////////////////////////////////////////////////////
 #define RANGE_LUMINANCE 255 /* Range of image luminance values */
 #define PERMS       	0644     /* File acess permits:RW for the users and R for the others */
 #define RANGEY      	 255     /* Range level of luminance */
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
-///************************ END CONSTANTES DEFINITION ***********************///
 
 
-///**************************************************************************///
-///*                          PROTOTYPES DEFINITION                         *///
-///**************************************************************************///
+
+////////////////////////////////////////////////////////////////////////////////
+///                           PROTOTYPES DEFINITION                          ///
+////////////////////////////////////////////////////////////////////////////////
 void read_header_pgm(int *ysize, int *xsize, char *file_name);
 void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
 void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name);
@@ -89,20 +87,18 @@ unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch);
 //Funcoes de escrita de bits para o ficheiro
 void output_bit(int bit, FILE* output_file, int *buffer, int *bits_to_go, long *bits_count);
 void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go);
-///************************ END PROTOTYPES DEFINITION ***********************///
 
 
-///**************************************************************************///
-///*                              GLOBAL VARIABLES                          *///
-///**************************************************************************///
+
+////////////////////////////////////////////////////////////////////////////////
+///                               GLOBAL VARIABLES                           ///
+////////////////////////////////////////////////////////////////////////////////
 int *G_dic;
 
-//******************************************************************************
-//*                                                                            *
-//*     Funcao main                                                            *
-//*                                                                            *
-//*                                                                            *
-//******************************************************************************
+
+////////////////////////////////////////////////////////////////////////////////
+///                                  FUNCTIONS                               ///
+////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
     int **image_orig, **image_out;
@@ -627,10 +623,10 @@ int *int_vector(int nr, int nc) {
     return v;
 }
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 /* Peak Signal Noise Ratio                                                          */
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     double psnr;
@@ -648,10 +644,10 @@ double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
 /* End of psnr function */
 
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 /* Mean Squared Error                                                               */
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     long cnt = 0;
@@ -666,7 +662,7 @@ double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel) {
 
     return (mse / cnt);
 }
-/* End of mse function */
+
 
 /* OUTPUT A BIT  */
 void output_bit(int bit, FILE* output_file, int *buffer, int *bits_to_go, long *bits_count) {
@@ -689,10 +685,10 @@ void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go) {
 
 
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 /* WRITE OUTPUT LUMINANCE FILE - PGM format*/
 
-/************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// *********/
 void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
     int i;
     int pointfo;
@@ -769,9 +765,9 @@ void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
     close(pointfo); /* closes file */
 }
 
-/*END of write_f_pgm */
 
-/*************************************************************************************/
+
+/////////////////////////////////////////////////////////////////////////// **********/
 /*                                                                                   */
 /*  UCMATRIX - Allocates memory for a matrix of variables of type unsigned char      */
 /*                                                                                   */
@@ -780,7 +776,7 @@ void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
 /*  Returns a poiter to a unsigned char matrix (unsigned char **)                    */
 /*                                                                                   */
 
-/*************************************************************************************/
+/////////////////////////////////////////////////////////////////////////// **********/
 unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch) {
     int i;
     unsigned char **m;
