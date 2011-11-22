@@ -15,7 +15,6 @@
 │   ├── [01;32mdecvector[00m
 │   ├── [01;32mdecvector.sh[00m
 │   ├── main.c
-│   ├── main.o
 │   └── Makefile
 ├── [01;34mDicts[00m
 │   └── dic_1024_4x4
@@ -49,4 +48,4 @@
 ├── [01;32mrun[00m
 └── tree.out
 
-9 directories, 40 files
+9 directories, 39 files
