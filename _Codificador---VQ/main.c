@@ -100,7 +100,7 @@ int **G_dic;
 //******************************************************************************
 
 int main(int argc, char *argv[]) {
-    int **Image, **Image_orig, **Image_out;
+    int **image, **image_orig, **image_out;
     int *original_block;
 
     int i, j, i1, j1, n;
@@ -156,17 +156,17 @@ int main(int argc, char *argv[]) {
     }
 
     //Le imagem a comprimir
-    printf("\n Imagem a comprimir            : %s", inname);
+    printf("\n imagem a comprimir            : %s", inname);
     read_header_pgm(&ysize, &xsize, inname); /* Reads the PGM file and returns the picture size */
-    Image_orig = int_matrix(ysize, xsize);
-    Image = int_matrix(ysize, xsize);
-    Image_out = int_matrix(ysize, xsize);
-    read_f_pgm(Image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
+    image_orig = int_matrix(ysize, xsize);
+    image = int_matrix(ysize, xsize);
+    image_out = int_matrix(ysize, xsize);
+    read_f_pgm(image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
     printf("\n Tamanho (%dx%d)             : %d pixels", xsize, ysize, xsize * ysize);
 
     for (i = 0; i < ysize; i++) {
         for (j = 0; j < xsize; j++) {
-            Image_orig[i][j] = Image[i][j];
+            image_orig[i][j] = image[i][j];
         }
     }
 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
 
     for (i = 0; i < ysize; i++) {
         for (j = 0; j < xsize; j++) {
-            aux += Image[i][j];
+            aux += image[i][j];
         }
     }
     average = aux / ((xsize)*(ysize));
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
     //Subtrai a média a todos os pixels
     for (i = 0; i < ysize; i++) {
         for (j = 0; j < xsize; j++) {
-            Image[i][j] -= average;
+            image[i][j] -= average;
         }
     }
     //-----------------------------------------
@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
                     original_block[j1 + (i1 * block_size_x)] =
-                            Image[i + i1][j + j1];
+                            image[i + i1][j + j1];
                 }
             }
 
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
 
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
-                    Image_out[i + i1][j + j1] =
+                    image_out[i + i1][j + j1] =
                             G_dic[index][i1 * block_size_x + j1];
                 }
             }
@@ -249,14 +249,14 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < ysize; i++) {
 
         for (j = 0; j < xsize; j++) {
-            Image_out[i][j] += average;
+            image_out[i][j] += average;
         }
     }
     //-----------------------------------------
 
 
-    psnr = calculate_psnr(Image_orig, Image_out, ysize, xsize);
-    mse = calculate_mse(Image_orig, Image_out, ysize, xsize);
+    psnr = calculate_psnr(image_orig, image_out, ysize, xsize);
+    mse = calculate_mse(image_orig, image_out, ysize, xsize);
     printf("\n Tempo total de execucao       : %9.3f segundos", elapsed);
     printf("\n Total Bits                    : %ld bits (%ld Bytes)", bits_count, bits_count / 8);
 
@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
     printf("\n-----------------------------------------------------\n\n");
 
 
-    //write_f_pgm(Image_out, *ysize, *xsize, "Testeout.pgm");
+    //write_f_pgm(image_out, *ysize, *xsize, "Testeout.pgm");
 
     fclose(pointf_out);
     return EXIT_SUCCESS;
@@ -379,6 +379,13 @@ void help(char *prgname) {
 /*                                                                                  */
 
 /************************************************************************************/
+/**
+ *  <p> Reads the information of a pgm file to calculate the horizontal and vertical size.</p>
+ * 
+ * @param ysize image vertical dimension
+ * @param xsize image horizontal dimensio
+ * @param file_name file name of the image that will be coded
+ */
 void read_header_pgm(int *ysize, int *xsize, char *file_name) {
     FILE *pointf;
     char dummy[12];
@@ -419,6 +426,15 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
 /* End of read_header_pgm function */
 
 
+/**
+ *
+ * <p> Copy the image to memory </p>
+ *
+ * @param pelimg vector where the image will be saved
+ * @param ysize image vertical dimension
+ * @param xsize image horizontal dimensio
+ * @param file_name file name of the image that will be coded
+ */
 void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
     int i, j;
     FILE *pointf;
@@ -476,7 +492,6 @@ void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
 /*    number of rows / nunmber of columnc                                            */
 /*  Returns a poiter to a int matrix (int **)                                        */
 /*                                                                                   */
-
 /*************************************************************************************/
 int **int_matrix(int nr, int nc) {
     int i;
@@ -648,16 +663,16 @@ void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
 
     write(pointfo, (char *) header_pgm, i);
 
-    unsigned char **Image_tmp;
+    unsigned char **image_tmp;
     int j;
-    Image_tmp = ucmatrix(0, nline, 0, npixel);
+    image_tmp = ucmatrix(0, nline, 0, npixel);
 
     for (i = 0; i < nline; i++)
         for (j = 0; j < npixel; j++)
-            Image_tmp[i][j] = (unsigned char) im_matrix[i][j];
+            image_tmp[i][j] = (unsigned char) im_matrix[i][j];
 
     for (i = 0; i < (nline_orig); i++)
-        write(pointfo, Image_tmp[i], npixel_orig);
+        write(pointfo, image_tmp[i], npixel_orig);
 
     close(pointfo); /* closes file */
 }
