@@ -29,7 +29,7 @@ do
 	echo "================================================================="
 	echo ">> $DictFName"
 	CodedFName=${InputFName}_${DictFName}.coded
-	time ./codvector $InputDir_PGM/$InputFName_PGM $DictsDir/$DictFName $CodedFName
+	time ./codvector -i $InputDir_PGM/$InputFName_PGM -d $DictsDir/$DictFName -o $CodedFName
 	ls -l $CodedFName
 	mv $CodedFName $CodedDir
 
