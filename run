@@ -1,21 +1,36 @@
 #!/bin/bash
+
+# Clean coded data
+rm -r Coded
 mkdir Coded
-rm Coded/*
+
+
+# MAKE codificador
 clear
-echo "############### MAKE Codificador ################"
-cd _Codificador---VQ/
+echo "\n############### MAKE Codificador ################\n"
+cd _Codificador/
 make clean
 make params
 make all
 
-echo "############### sh codevector.sh ################"
+
+# Run codvector
+echo "\n############### RUN Codvector ################\n"
 sh codvector.sh $1
 
-echo "######################################################"
-echo "############### Output match verifier ################"
-echo "######################################################"
+echo "\n\n############################################################"
+echo "################## OUTPUT match verifier ###################"
+echo "############################################################"
 cd ../OutputVerifier/
 sh verifier.sh $1
-echo "######################################################"
+echo "############################################################\n"
+
+# Clean coded data
+cd ..
+rm -r Coded
+rm _Codificador/*.coded >/dev/null 2>&1
+
+# Create tree output
+tree -o tree.out
 
 

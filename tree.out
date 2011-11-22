@@ -1,16 +1,17 @@
 [01;34m.[00m
-├── [01;34mCoded[00m
-│   └── testPatterns_1024_dic_1024_4x4.coded
-├── [01;34m_Codificador---VQ[00m
+├── [01;34m_Codificador[00m
 │   ├── [01;32mcodvector[00m
 │   ├── [01;32mcodvector.sh[00m
+│   ├── debug.c
+│   ├── debug.h
 │   ├── main.c
 │   ├── main.o
 │   ├── Makefile
 │   ├── params.c
 │   ├── params.h
+│   ├── params.o
 │   └── params_opt.ggo
-├── [01;34m_Descodificador---VQ[00m
+├── [01;34m_Descodificador[00m
 │   ├── [01;32mdecvector[00m
 │   ├── [01;32mdecvector.sh[00m
 │   ├── main.c
@@ -18,10 +19,17 @@
 │   └── Makefile
 ├── [01;34mDicts[00m
 │   └── dic_1024_4x4
-├── [01;34mExamples---PGM[00m
+├── [01;34mImages[00m
 │   ├── [01;35mILikeEI.pgm[00m
 │   ├── [01;35mInformatica_e_no_IPL---cartaz.pgm[00m
-│   └── [01;35mtestPatterns_1024.pgm[00m
+│   ├── [01;35mtestPatterns_1024.pgm[00m
+│   └── [01;34mTraining_pgm[00m
+│       └── [01;34mpgm_1024[00m
+│           ├── [01;35mman_1024.pgm[00m
+│           ├── [01;35mt_airplane_U2_1024.pgm[00m
+│           ├── [01;35mt_airport_1024.pgm[00m
+│           ├── [01;35mt_pentagon_1024.pgm[00m
+│           └── [01;35mt_tileRoof_1024.pgm[00m
 ├── [01;34mLBG[00m
 │   ├── dic_1024_2x2
 │   ├── dic_1024_4x4
@@ -39,13 +47,6 @@
 │   └── verifier.sh
 ├── README.md
 ├── [01;32mrun[00m
-├── [01;34mTraining_pgm[00m
-│   └── [01;34mpgm_1024[00m
-│       ├── [01;35mman_1024.pgm[00m
-│       ├── [01;35mt_airplane_U2_1024.pgm[00m
-│       ├── [01;35mt_airport_1024.pgm[00m
-│       ├── [01;35mt_pentagon_1024.pgm[00m
-│       └── [01;35mt_tileRoof_1024.pgm[00m
 └── tree.out
 
-10 directories, 38 files
+9 directories, 40 files

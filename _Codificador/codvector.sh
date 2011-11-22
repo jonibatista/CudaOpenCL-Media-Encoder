@@ -2,7 +2,7 @@
 
 #InputFName=testPatterns_1024
 #InputFName=tecnologias_emergentes02
-InputDir_PGM=../Examples---PGM
+InputDir_PGM=../Images
 DictsDir=../Dicts
 CodedDir=../Coded
 DictFName=dic_1024_4x4
