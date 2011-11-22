@@ -1,28 +1,28 @@
-/*//////////////////////////////////////////////////////////////////////////
- *   Copyright (C) 2008 by Nelson Carreira Francisco                       *
- *   eng.nelsito@gmail.com                                                 *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ////////////////////////////////////////////////////////////////////////// /
+////////////////////////////////////////////////////////////////////////////////
+///   Copyright (C) 2008 by Nelson Carreira Francisco                        ///
+///   eng.nelsito@gmail.com                                                  ///
+///                                                                          ///
+///   This program is free software; you can redistribute it and/or modify   ///
+///   it under the terms of the GNU General Public License as published by   ///
+///   the Free Software Foundation; either version 2 of the License, or      ///
+///   (at your option) any later version.                                    ///
+///                                                                          ///
+///   This program is distributed in the hope that it will be useful,        ///
+///   but WITHOUT ANY WARRANTY; without even the implied warranty of         ///
+///   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          ///
+///   GNU General Public License for more details.                           ///
+///                                                                          ///
+///   You should have received a copy of the GNU General Public License      ///
+///   along with this program; if not, write to the                          ///
+///   Free Software Foundation, Inc.,                                        ///
+///   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.              ///
+////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////
- *   Implementacaoo de um codificador de imagens baseado em                *
- *   Quantificacao vectorial                                                *
- *   Nelson Carreira Francisco                                              *
- ////////////////////////////////////////////////////////////////////////// */
+////////////////////////////////////////////////////////////////////////////////
+///   Implementacaoo de um codificador de imagens baseado em                 ///
+///   Quantificacao vectorial                                                ///
+///   Nelson Carreira Francisco                                              ///
+////////////////////////////////////////////////////////////////////////////////
 
 
 #ifdef HAVE_CONFIG_H
@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
+#include <iostream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,11 +59,46 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///                              CONSTANTS                                   ///
 ////////////////////////////////////////////////////////////////////////////////
-#define RANGE_LUMINANCE 255 /* Range of image luminance values */
-#define PERMS       	0644     /* File acess permits:RW for the users and R for the others */
-#define RANGEY      	 255     /* Range level of luminance */
+#define RANGE_LUMINANCE 255         // Range of image luminance values
+#define PERMS       	0644        // File acess permits:RW for the users and R for the others
+#define RANGEY      	 255        // Range level of luminance
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
+
+/**
+ * <p> Function to process CUDA errors </p>
+ *
+ * @param err [IN] CUDA error to process (usually the code returned by the cuda function)
+ * @param line [IN] line of source code where function is called
+ * @param file [IN] name of source file where function is called
+ * @return on error, the function terminates the process with EXIT_FAILURE code.
+ *
+ * source: "CUDA by Example: An Introduction to General-Purpose "
+ * GPU Programming", Jason Sanders, Edward Kandrot, NVIDIA, July 2010
+ * @note: the function should be called through the macro 'HANDLE_ERROR'
+ **/
+static void HandleError(cudaError_t err,
+        const char *file,
+        int line) {
+    if (err != cudaSuccess) {
+        printf("[ERROR] '%s' (%d) in '%s' at line '%d'\n",
+                cudaGetErrorString(err), err, file, line);
+        exit(EXIT_FAILURE);
+    }
+}
+/**
+ * <p>HANDLE_ERROR macro.</p>
+ * 
+ * Wrapping macro for HandleError function (provides "file" and "line" parameters).
+ * 
+ * @param err [IN] CUDA error
+ * @return on error, the calling process is terminated
+ **/
+#define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
+
+////////////////////////////////////////////////////////////////////////////////
+///                             CUDA KERNEL                                  ///
+////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -309,8 +345,18 @@ int main(int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 }
-//Fim da funcao main
 
+
+
+/**
+ *
+ * @param index
+ * @param bits_index
+ * @param bits_count
+ * @param bits_to_go
+ * @param buffer
+ * @param pointf_out
+ */
 void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, int *buffer, FILE *pointf_out) {
     int k;
     int mask;
@@ -324,6 +370,7 @@ void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, i
     }
 
 }
+
 
 
 /**
@@ -369,6 +416,7 @@ void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int
 }
 
 
+
 /**
  * <p> Calculate the square error between a vector and a training set of the codebook vector. </p>
  *
@@ -384,10 +432,11 @@ float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *origina
 
     for (i = 0; i < *block_size_x * (*block_size_y); i++) {
         tmp += ((G_dic[index_dic * (*block_size_x * (*block_size_y)) + i] - original_block[i]) *
-                (G_dic[index_dic * (*block_size_x * (*block_size_y)) + i]  - original_block[i]));
+                (G_dic[index_dic * (*block_size_x * (*block_size_y)) + i] - original_block[i]));
     }
     return tmp;
 }
+
 
 
 /**
@@ -433,6 +482,7 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
 
     fclose(pointf); /* closes file */
 }
+
 
 
 /**
@@ -490,6 +540,7 @@ void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
 
     fclose(pointf); /* closes file */
 }
+
 
 
 /**
@@ -578,6 +629,7 @@ int **int_matrix(int nr, int nc) {
 }
 
 
+
 /**
  * <p> Allocates memory for a matrix of variables of type float. </p>
  *
@@ -605,6 +657,9 @@ float **floatmatrix(int nr, int nc) {
 
     return m;
 }
+
+
+
 /**
  * <p> Allocates memory for a vector of variables of type int. </p>
  *
@@ -624,10 +679,17 @@ int *int_vector(int nr, int nc) {
     return v;
 }
 
-/////////////////////////////////////////////////////////////////////////// *********/
-/* Peak Signal Noise Ratio                                                          */
 
-/////////////////////////////////////////////////////////////////////////// *********/
+
+/**
+ * <p> Calculate the Peak Signal Noise Ratio </p>
+ *
+ * @param origblk
+ * @param cmpblk
+ * @param nline
+ * @param npixel
+ * @return
+ */
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     double psnr;
@@ -642,13 +704,17 @@ double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
 
     return psnr;
 }
-/* End of psnr function */
 
 
-/////////////////////////////////////////////////////////////////////////// *********/
-/* Mean Squared Error                                                               */
-
-/////////////////////////////////////////////////////////////////////////// *********/
+/**
+ * <p> Mean Squared Error </p>
+ *
+ * @param origblk
+ * @param cmpblk
+ * @param nline
+ * @param npixel
+ * @return
+ */
 double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     long cnt = 0;
@@ -665,7 +731,15 @@ double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel) {
 }
 
 
-/* OUTPUT A BIT  */
+/**
+ * <p> Output a bit </p>
+ *
+ * @param bit
+ * @param output_file
+ * @param buffer
+ * @param bits_to_go
+ * @param bits_count
+ */
 void output_bit(int bit, FILE* output_file, int *buffer, int *bits_to_go, long *bits_count) {
     *buffer >>= 1; /* Put bit in top of buffer	*/
     if (bit) *buffer |= 0x80;
@@ -678,18 +752,28 @@ void output_bit(int bit, FILE* output_file, int *buffer, int *bits_to_go, long *
     }
 }
 
-/* FLUSH OUT THE LAST BITS */
+
+/**
+ * <p> Flush out the last bits </p>
+ *
+ * @param output_file
+ * @param buffer
+ * @param bits_to_go
+ */
 void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go) {
     putc(*buffer >> *bits_to_go, output_file);
     //fprintf(stderr," Total Bits: %d bits\n",Bits_Count);
 }
 
 
-
-/////////////////////////////////////////////////////////////////////////// *********/
-/* WRITE OUTPUT LUMINANCE FILE - PGM format*/
-
-/////////////////////////////////////////////////////////////////////////// *********/
+/**
+ * <p> Write output to luminance file - PGM format </p>
+ *
+ * @param im_matrix
+ * @param nline
+ * @param npixel
+ * @param filename
+ */
 void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
     int i;
     int pointfo;
@@ -767,17 +851,15 @@ void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename) {
 }
 
 
-
-/////////////////////////////////////////////////////////////////////////// **********/
-/*                                                                                   */
-/*  UCMATRIX - Allocates memory for a matrix of variables of type unsigned char      */
-/*                                                                                   */
-/*  Inputs:                                                                          */
-/*    1st and last row / 1st and last column                                         */
-/*  Returns a poiter to a unsigned char matrix (unsigned char **)                    */
-/*                                                                                   */
-
-/////////////////////////////////////////////////////////////////////////// **********/
+/**
+ * <p> Allocates memory for a matrix of variables of type unsigned char </p>
+ *
+ * @param nrl number of last row
+ * @param nrh number of first row
+ * @param ncl number of last column
+ * @param nch number of first column
+ * @return a pointer to a unsigned char matrix (unsigned char **)
+ */
 unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch) {
     int i;
     unsigned char **m;
