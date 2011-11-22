@@ -102,7 +102,7 @@ int **G_dic;
 //******************************************************************************
 
 int main(int argc, char *argv[]) {
-    int **image, **image_orig, **image_out;
+    int **image_orig, **image_out;
     int *v_pgm, *v_pgm_coded;
     int *original_block;
 
@@ -171,16 +171,14 @@ int main(int argc, char *argv[]) {
 
     // old stuff (using matrixes)
     image_orig = int_matrix(ysize, xsize);
-    image = int_matrix(ysize, xsize);
     image_out = int_matrix(ysize, xsize);
-    read_file_pgm(image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
 
 
     printf("\n Tamanho (%dx%d)             : %d pixels", xsize, ysize, xsize * ysize);
 
     for (i = 0; i < ysize; i++) {
         for (j = 0; j < xsize; j++) {
-            image_orig[i][j] = image[i][j];
+            image_orig[i][j] = v_pgm[i * xsize + j];
         }
     }
 
@@ -193,7 +191,7 @@ int main(int argc, char *argv[]) {
 
     for (i = 0; i < ysize; i++) {
         for (j = 0; j < xsize; j++) {
-            aux += image[i][j];
+            aux += v_pgm[i * xsize + j];
         }
     }
     average = aux / ((xsize)*(ysize));
@@ -204,8 +202,8 @@ int main(int argc, char *argv[]) {
 
     //Subtrai a média a todos os pixels
     for (i = 0; i < ysize; i++) {
-        for (j = 0; j < xsize; j++) {
-            image[i][j] -= average;
+        for (j = 0; j < xsize; j++){
+            v_pgm[i * xsize + j] -= average;
         }
     }
     //-----------------------------------------
@@ -227,7 +225,7 @@ int main(int argc, char *argv[]) {
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
                     original_block[j1 + (i1 * block_size_x)] =
-                            image[i + i1][j + j1];
+                            v_pgm[(i + i1) * xsize + (j + j1)];
                 }
             }
 
@@ -292,6 +290,17 @@ int main(int argc, char *argv[]) {
     //write_f_pgm(image_out, *ysize, *xsize, "Testeout.pgm");
 
     fclose(pointf_out);
+
+    // now free the memory
+    free(image_out);
+
+            free(v_pgm_coded);
+  
+
+           // free(image_orig);
+            //free(image_out);
+    
+    
     return EXIT_SUCCESS;
 }
 //Fim da funcao main
@@ -618,8 +627,6 @@ float **floatmatrix(int nr, int nc) {
 
 
 int *int_vector(int nr, int nc) {
-    int i;
-    int **m;
     int *v;
 
     v = (int *) malloc((unsigned) (nr * nc) * sizeof (int *));
