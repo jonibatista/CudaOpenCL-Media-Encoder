@@ -71,7 +71,6 @@
 ///**************************************************************************///
 ///*                          PROTOTYPES DEFINITION                         *///
 ///**************************************************************************///
-void help(char *prgname);
 void read_header_pgm(int *ysize, int *xsize, char *file_name);
 void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
 void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name);
@@ -80,7 +79,6 @@ float **floatmatrix(int nr, int nc);
 int *int_vector(int nr, int nc);
 float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *original_block);
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
-void my_load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel);
 double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel);
 void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, int *buffer, FILE *pointf_out);
@@ -97,8 +95,7 @@ void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go);
 ///**************************************************************************///
 ///*                              GLOBAL VARIABLES                          *///
 ///**************************************************************************///
-int **G_dic;
-int *G_dic_my;
+int *G_dic;
 
 //******************************************************************************
 //*                                                                            *
@@ -159,7 +156,7 @@ int main(int argc, char *argv[]) {
 
 
     //Carrega dicionario
-    my_load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
+    load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
     bits_index = ceil(log(num_codewords) / log(2));
 
     original_block = (int *) calloc(block_size_x*block_size_y, sizeof (int));
@@ -253,8 +250,7 @@ int main(int argc, char *argv[]) {
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
                     image_out[i + i1][j + j1] =
-                            //G_dic[index][i1 * block_size_x + j1];
-                            G_dic_my[index * block_size_x + (i1 * block_size_x + j1)];
+                            G_dic[index * block_size_x + (i1 * block_size_x + j1)];
                 }
             }
 
@@ -311,7 +307,8 @@ int main(int argc, char *argv[]) {
     free(image_orig);
     free(image_out);
     free(v_pgm_coded);
-
+    free(v_pgm);
+    free(G_dic);
 
     return EXIT_SUCCESS;
 }
@@ -332,15 +329,15 @@ void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, i
 }
 
 
-
-
-//******************************************************************************
-//*                                                                            *
-//*     Calcula o erro quadrático entre um vectro do set de treino             *
-//*	e um vector do codebook                                                *
-//*                                                                            *
-//******************************************************************************
-
+/**
+ * <p> Load the dictionary file to memory. </p>
+ *
+ * @param file_name the name of the dictionary file
+ * @param num_codewords number of blocks of the dictionary
+ * @param block_size_x horizontal size of the block
+ * @param block_size_y vertical size of the block
+ *
+ */
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
     int i, j;
     FILE *pointf_dic;
@@ -362,44 +359,11 @@ void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int
     printf("\n-----------------------------------------------------");
     fflush(stdout);
 
-    G_dic = int_matrix(*num_codewords, *block_size_y * (*block_size_x));
+    G_dic = int_vector(*num_codewords, *block_size_y * (*block_size_x));
 
     for (i = 0; i<*num_codewords; i++) {
         for (j = 0; j < *block_size_x * (*block_size_y); j++) {
-            fscanf(pointf_dic, "%d\t", &G_dic[i][j]);
-        }
-        (void) fscanf(pointf_dic, "\n");
-    }
-
-    fclose(pointf_dic);
-}
-
-void my_load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
-    int i, j;
-    FILE *pointf_dic;
-
-    pointf_dic = fopen(file_name, "r");
-    if (pointf_dic == NULL) {
-        fprintf(stderr, "Impossivel abrir dicionario: %s\n\n", file_name);
-        exit(1);
-    }
-
-    fscanf(pointf_dic, "%d\n", num_codewords);
-    fscanf(pointf_dic, "%d\n", block_size_x);
-    fscanf(pointf_dic, "%d\n", block_size_y);
-
-    printf("\n-----------------------------------------------------");
-    printf("\n Carregou dicionario %s", file_name);
-    printf("\n %d blocos de %dx%d pixels",
-            *num_codewords, *block_size_y, *block_size_x);
-    printf("\n-----------------------------------------------------");
-    fflush(stdout);
-
-    G_dic_my = int_vector(*num_codewords, *block_size_y * (*block_size_x));
-
-    for (i = 0; i<*num_codewords; i++) {
-        for (j = 0; j < *block_size_x * (*block_size_y); j++) {
-            fscanf(pointf_dic, "%d\t", &G_dic_my[i * (*block_size_x * (*block_size_y)) + j]);
+            fscanf(pointf_dic, "%d\t", &G_dic[i * (*block_size_x * (*block_size_y)) + j]);
         }
         (void) fscanf(pointf_dic, "\n");
     }
@@ -408,51 +372,26 @@ void my_load_dictionary(char *file_name, int *num_codewords, int *block_size_x, 
 }
 
 
-//******************************************************************************
-//*                                                                            *
-//*     Calcula o erro quadrático entre um vectro do set de treino             *
-//*	e um vector do codebook                                                *
-//*                                                                            *
-//******************************************************************************
-
+/**
+ * <p> Calculate the square error between a vector and a training set of the codebook vector. </p>
+ *
+ * @param index_dic index of the dictionary row
+ * @param block_size_x horizontal size of the block
+ * @param block_size_y vertical size of the block
+ * @param original_block the current block
+ * @return the square error value
+ */
 float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *original_block) {
     int i;
     float tmp = 0;
 
     for (i = 0; i < *block_size_x * (*block_size_y); i++) {
-        tmp += ((G_dic_my[index_dic * (*block_size_x * (*block_size_y)) + i] - original_block[i]) *
-                (G_dic_my[index_dic * (*block_size_x * (*block_size_y)) + i]  - original_block[i]));
+        tmp += ((G_dic[index_dic * (*block_size_x * (*block_size_y)) + i] - original_block[i]) *
+                (G_dic[index_dic * (*block_size_x * (*block_size_y)) + i]  - original_block[i]));
     }
     return tmp;
-} /* Enf of quad_err */
-
-
-
-
-
-
-//******************************************************************************
-//*                                                                            *
-//*     Apresenta informacao e sintaxe do programa			       *
-//*                                                                            *
-//******************************************************************************
-
-void help(char *prgname) {
-    printf("\n---------------------------------------------------------------------------------\n");
-    printf(" Programa de codificação de imagens baseado em quantização vectorial\n");
-    printf("---------------------------------------------------------------------------------\n");
-    printf(" Sintaxe: %s <ficheiro origem> <ficheiro dicionario> <ficheiro destino>\n", prgname);
-    printf("---------------------------------------------------------------------------------\n\n");
 }
 
-
-/************************************************************************************/
-/*                                                                                  */
-/* READS THE INFORMATION OF A PGM FILE HEADER                                       */
-/* usage: read_header_pgm (int *ximg,int *yimg,char *originalfilename);             */
-/*                                                                                  */
-
-/************************************************************************************/
 
 /**
  *  <p> Reads the information of a pgm file to calculate the horizontal and vertical size.</p>
@@ -498,7 +437,6 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
     fclose(pointf); /* closes file */
 }
 
-/* End of read_header_pgm function */
 
 /**
  *
@@ -555,7 +493,7 @@ void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
 
     fclose(pointf); /* closes file */
 }
-/* End of read_file_pgm function */
+
 
 /**
  *
@@ -612,7 +550,7 @@ void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name) {
 
     fclose(pointf); /* closes file */
 }
-/* End of read_file_pgm function */
+
 
 /**
  * <p> Allocates memory for a matrix of variables of type int. </p>
@@ -642,6 +580,7 @@ int **int_matrix(int nr, int nc) {
     return m;
 }
 
+
 /**
  * <p> Allocates memory for a matrix of variables of type float. </p>
  *
@@ -669,7 +608,13 @@ float **floatmatrix(int nr, int nc) {
 
     return m;
 }
-
+/**
+ * <p> Allocates memory for a vector of variables of type int. </p>
+ *
+ * @param nr number of rows
+ * @param nc number of columns
+ * @return a pointer to a int vector (int *)
+ */
 int *int_vector(int nr, int nc) {
     int *v;
 
@@ -701,6 +646,7 @@ double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     return psnr;
 }
 /* End of psnr function */
+
 
 /************************************************************************************/
 /* Mean Squared Error                                                               */
