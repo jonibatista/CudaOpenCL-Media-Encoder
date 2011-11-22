@@ -69,9 +69,11 @@
 ///**************************************************************************///
 void help(char *prgname);
 void read_header_pgm(int *ysize, int *xsize, char *file_name);
-void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
+void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
+void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name);
 int **int_matrix(int nr, int nc);
 float **floatmatrix(int nr, int nc);
+int *int_vector(int nr, int nc);
 float quad_err(int index_dic, int *block_size_x, int *block_size_y, int *original_block);
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel);
@@ -101,6 +103,7 @@ int **G_dic;
 
 int main(int argc, char *argv[]) {
     int **image, **image_orig, **image_out;
+    int *v_pgm, *v_pgm_coded;
     int *original_block;
 
     int i, j, i1, j1, n;
@@ -158,10 +161,21 @@ int main(int argc, char *argv[]) {
     //Le imagem a comprimir
     printf("\n imagem a comprimir            : %s", inname);
     read_header_pgm(&ysize, &xsize, inname); /* Reads the PGM file and returns the picture size */
+
+    // load pgm to vector
+    v_pgm = int_vector(ysize, xsize);
+    v_read_file_pgm(v_pgm, &ysize, &xsize, inname);
+
+    // create the vector that will contain the coded pgm
+    v_pgm_coded = int_vector(ysize/block_size_y,xsize/block_size_x);
+
+    // old stuff (using matrixes)
     image_orig = int_matrix(ysize, xsize);
     image = int_matrix(ysize, xsize);
     image_out = int_matrix(ysize, xsize);
-    read_f_pgm(image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
+    read_file_pgm(image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
+
+
     printf("\n Tamanho (%dx%d)             : %d pixels", xsize, ysize, xsize * ysize);
 
     for (i = 0; i < ysize; i++) {
@@ -226,7 +240,7 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            write_index(index, bits_index, &bits_count, &bits_to_go, &buffer, pointf_out);
+            v_pgm_coded[(i/block_size_y) * (xsize/block_size_x) + (j/block_size_x)] = index;
 
             for (i1 = 0; i1 < block_size_y; i1++) {
                 for (j1 = 0; j1 < block_size_x; j1++) {
@@ -235,6 +249,13 @@ int main(int argc, char *argv[]) {
                 }
             }
 
+        }
+    }
+
+    // write the coded pgm to file
+    for(i = 0; i < (ysize/block_size_y); i++){
+        for(j = 0; j < (xsize/block_size_x); j++){
+            write_index(v_pgm_coded[i * (xsize/block_size_x) + j], bits_index, &bits_count, &bits_to_go, &buffer, pointf_out);
         }
     }
 
@@ -298,7 +319,6 @@ void write_index(int index, int bits_index, long *bits_count, int *bits_to_go, i
 //*	e um vector do codebook                                                *
 //*                                                                            *
 //******************************************************************************
-
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
     int i, j;
     FILE *pointf_dic;
@@ -390,7 +410,7 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
     FILE *pointf;
     char dummy[12];
     char aux;
-    int lido = 0;
+    int read = 0;
 
     pointf = fopen(file_name, "r");
     if (pointf == NULL) {
@@ -413,9 +433,9 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
 
         } else {
             ungetc(aux, pointf);
-            lido = 1;
+            read = 1;
         }
-    } while (lido == 0);
+    } while (read == 0);
 
     fscanf(pointf, " %d %d", xsize, ysize);
     //********************************
@@ -435,13 +455,13 @@ void read_header_pgm(int *ysize, int *xsize, char *file_name) {
  * @param xsize image horizontal dimensio
  * @param file_name file name of the image that will be coded
  */
-void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
+void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
     int i, j;
     FILE *pointf;
     char dummy[15];
     int aux[1];
     char aux1;
-    int lido = 0;
+    int read = 0;
 
 
     pointf = fopen(file_name, "r");
@@ -462,9 +482,9 @@ void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
             } while ((aux1 != '\n') && (aux1 != EOF));
         } else {
             ungetc(aux1, pointf);
-            lido = 1;
+            read = 1;
         }
-    } while (lido == 0);
+    } while (read == 0);
 
 
 
@@ -481,18 +501,72 @@ void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
 
     fclose(pointf); /* closes file */
 }
-/* End of read_f_pgm function */
+/* End of read_file_pgm function */
+
+/**
+ *
+ * <p> Copy the image to memory </p>
+ *
+ * @param pelimg vector where the image will be saved
+ * @param ysize image vertical dimension
+ * @param xsize image horizontal dimensio
+ * @param file_name file name of the image that will be coded
+ */
+void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name) {
+    int i, j;
+    FILE *pointf;
+    char dummy[15];
+    int aux[1];
+    char aux1;
+    int read = 0;
 
 
-/*************************************************************************************/
-/*                                                                                   */
-/*  int_matrix - Allocates memory for a matrix of variables of type int               */
-/*                                                                                   */
-/*  Inputs:                                                                          */
-/*    number of rows / nunmber of columnc                                            */
-/*  Returns a poiter to a int matrix (int **)                                        */
-/*                                                                                   */
-/*************************************************************************************/
+    pointf = fopen(file_name, "r");
+    if (pointf == NULL) {
+        fprintf(stderr, "\nCannot open input file: %s\n", file_name);
+        exit(1);
+    }
+
+    fscanf(pointf, "%s\n", dummy);
+
+    //*******************************
+    do {
+        aux1 = getc(pointf);
+        //fflush(stdout);
+        if (aux1 == '#') {
+            do {
+                aux1 = getc(pointf);
+            } while ((aux1 != '\n') && (aux1 != EOF));
+        } else {
+            ungetc(aux1, pointf);
+            read = 1;
+        }
+    } while (read == 0);
+
+
+
+    fscanf(pointf, " %d %d", xsize, ysize);
+    //********************************
+
+    fscanf(pointf, "%d\n", aux);
+
+    for (i = 0; i<*ysize; i++) {
+        for (j = 0; j<*xsize; j++) {
+            pelimg[i * (*xsize) + j] = (unsigned char) fgetc(pointf);
+        }
+    }
+
+    fclose(pointf); /* closes file */
+}
+/* End of read_file_pgm function */
+
+/**
+ * <p> Allocates memory for a matrix of variables of type int. </p>
+ *
+ * @param nr number of rows
+ * @param nc number of columns
+ * @return a pointer to a int matrix (int **)
+ */
 int **int_matrix(int nr, int nc) {
     int i;
     int **m;
@@ -514,6 +588,13 @@ int **int_matrix(int nr, int nc) {
     return m;
 }
 
+/**
+ * <p> Allocates memory for a matrix of variables of type float. </p>
+ *
+ * @param nr number of rows
+ * @param nc number of columns
+ * @return a pointer to a int matrix (float **)
+ */
 float **floatmatrix(int nr, int nc) {
     int i;
     float **m;
@@ -536,9 +617,22 @@ float **floatmatrix(int nr, int nc) {
 }
 
 
+int *int_vector(int nr, int nc) {
+    int i;
+    int **m;
+    int *v;
+
+    v = (int *) malloc((unsigned) (nr * nc) * sizeof (int *));
+    if (!v) {
+        printf("int_vector() - allocation failure 1 \n");
+        exit(1);
+    }
+
+    return v;
+}
+
 /************************************************************************************/
 /* Peak Signal Noise Ratio                                                          */
-
 /************************************************************************************/
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
