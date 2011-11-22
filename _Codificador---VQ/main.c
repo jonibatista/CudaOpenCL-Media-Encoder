@@ -44,31 +44,54 @@
 #include <fcntl.h>
 
 
+///**************************************************************************///
+///*                        CONSTANTS ERROR                                 *///
+///**************************************************************************///
+#define ERROR_INVALID_PARAMETERS 1
+#define ERROR_ALLOCATE_MEMORY 2
+#define ERROR_OPEN_FILE
+///******************* END CONSTANTES ERROR DEFINITION **********************///
+
+
+///**************************************************************************///
+///*                             CONSTANTS                                  *///
+///**************************************************************************///
 #define RANGE_LUMINANCE 255 /* Range of image luminance values */
 #define PERMS       	0644     /* File acess permits:RW for the users and R for the others */
-#define RANGEY      	 255     /* Range level of luminance */ 
+#define RANGEY      	 255     /* Range level of luminance */
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
+///************************ END CONSTANTES DEFINITION ***********************///
 
 
-void ajuda(char *prgname);
+///**************************************************************************///
+///*                          PROTOTYPES DEFINITION                         *///
+///**************************************************************************///
+void help(char *prgname);
 void read_header_pgm(int *ysize, int *xsize, char *Fname);
 void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *Fname);
-int **intmatrix(int nr, int nc);
+int **int_matrix(int nr, int nc);
 float **floatmatrix(int nr, int nc);
-float quad_err(int indice_dic);
-void carrega_dicionario(void);
-double PSNR(int **origblk, int **cmpblk, int nline, int npixel);
-double MSE(int **origblk, int **cmpblk, int nline, int npixel);
-void escreve_indice(int indice);
+float quad_err(int indice_dic, int *block_size_x, int *block_size_y);
+void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y);
+double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel);
+double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel);
+void write_index(int indice, int bits_index);
 
 void write_f_pgm(int **im_matrix, int nline, int npixel, char *filename);
 unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch);
 
 
 //Funcoes de escrita de bits para o ficheiro
+void start_outputing_bits();
 void output_bit(int bit, FILE* output_file);
 void done_outputing_bits(FILE* output_file);
+///************************ END PROTOTYPES DEFINITION ***********************///
+
+
+///**************************************************************************///
+///*                              GLOBAL VARIABLES                          *///
+///**************************************************************************///
 
 /* THE BIT BUFFER */
 static int buffer; /* Bits buffered for output 		*/
@@ -76,33 +99,16 @@ static int bits_to_go; /* Number of bits still in buffer	        */
 long Bits_Count;
 
 
-/*
 int **Image_orig;
 int **Image_out;
-int ysize[1], xsize[1];           // The dimensions of the original image 
- */
 
-/*
- * The following variables are loaded from the dictionary  file
- **/
-int G_BsizeX;
-int G_BsizeY;
-int G_num_codewords;
-
-
-int G_bits_indice;
 int **G_dic;
 
 int *bloco_original;
 
-//FILE *pointf_in;		//Ponteiro para o ficheiro (imagem) original
-//FILE *pointf_out;		//Ponteiro para o ficheiro de saida
-
 FILE *pointf_in;
 FILE *pointf_dic;
 FILE *pointf_out;
-char *inname, *outname, *dic_name; //Nome dos ficheiros de input e output
-
 //******************************************************************************
 //*                                                                            *
 //*     Funcao main                                                            *
@@ -111,20 +117,12 @@ char *inname, *outname, *dic_name; //Nome dos ficheiros de input e output
 //******************************************************************************
 
 int main(int argc, char *argv[]) {
-
-    int **Image_orig;
-    int **Image_out;
-    int ysize[1], xsize[1]; /* The dimensions of the original image */
-
     int **Image;
     int num_blocos;
 
     int i, j, i1, j1, n;
     float aux;
     int indice;
-#ifdef VARS_NOT_USED
-    int contador;
-#endif /* VARS_NOT_USED */
     int media;
     float distorcao;
     float acumulador = 0;
@@ -135,12 +133,25 @@ int main(int argc, char *argv[]) {
     double elapsed = 0;
     start = clock();
 
+    /*
+     * The following variables are loaded from the dictionary  file
+     **/
+    int block_size_x = 0;
+    int block_size_y = 0;
+    int num_codewords = 0;
+
+    int bits_index = 0;
+
+    int ysize = 0, xsize = 0; /* The dimensions of the original image */
+
+    char *inname, *outname, *dic_name; //Nome dos ficheiros de input e output
+
     /* Dummy value -- indice is set before its usage */
     indice = -1;
 
     //Verifica argumentos
     if (argc < 3) {
-        ajuda(argv[0]);
+        help(argv[0]);
         return 0;
     }
 
@@ -150,49 +161,50 @@ int main(int argc, char *argv[]) {
 
 
     //Carrega dicionario
-    carrega_dicionario();
-    G_bits_indice = ceil(log(G_num_codewords) / log(2));
+    load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
+    bits_index = ceil(log(num_codewords) / log(2));
 
-    bloco_original = (int *) calloc(G_BsizeX*G_BsizeY, sizeof (int));
+    bloco_original = (int *) calloc(block_size_x*block_size_y, sizeof (int));
     if (!bloco_original) {
-        printf("intmatrix() - allocation failure 1 \n");
+        printf("int_matrix() - allocation failure 1 \n");
         exit(1);
     }
 
     //Le imagem a comprimir
     printf("\n Imagem a comprimir            : %s", inname);
-    read_header_pgm(ysize, xsize, inname); /* Reads the PGM file and returns the picture size */
-    Image_orig = intmatrix(*ysize, *xsize);
-    Image = intmatrix(*ysize, *xsize);
-    Image_out = intmatrix(*ysize, *xsize);
-    read_f_pgm(Image, ysize, xsize, inname); /* Reads the PGM file and stores the image in pely */
-    printf("\n Tamanho (%dx%d)             : %d pixels", *xsize, *ysize, ((*xsize)*(*ysize)));
+    read_header_pgm(&ysize, &xsize, inname); /* Reads the PGM file and returns the picture size */
+    Image_orig = int_matrix(ysize, xsize);
+    Image = int_matrix(ysize, xsize);
+    Image_out = int_matrix(ysize, xsize);
+    read_f_pgm(Image, &ysize, &xsize, inname); /* Reads the PGM file and stores the image in pely */
+    printf("\n Tamanho (%dx%d)             : %d pixels", xsize, ysize, xsize * ysize);
 
-    for (i = 0; i<*ysize; i++) {
-        for (j = 0; j<*xsize; j++) {
+    for (i = 0; i < ysize; i++) {
+        for (j = 0; j < xsize; j++) {
             Image_orig[i][j] = Image[i][j];
         }
     }
 
-    num_blocos = (*ysize / G_BsizeY)*(*xsize / G_BsizeX);
+    num_blocos = (ysize / block_size_y)*(xsize / block_size_x);
     printf("\n Total de blocos %dx%d na imagem : %d blocos",
-            G_BsizeY, G_BsizeX, num_blocos);
+            block_size_y, block_size_x, num_blocos);
     printf("\n-----------------------------------------------------");
 
     //Calcula a media das luminancias da imagem
-    for (i = 0; i<*ysize; i++) {
-        for (j = 0; j<*xsize; j++) {
+    for (i = 0; i < ysize; i++) {
+        for (j = 0; j < xsize; j++) {
             acumulador += Image[i][j];
         }
     }
-    media = acumulador / ((*xsize)*(*ysize));
+    media = acumulador / ((xsize)*(ysize));
     printf("\n Media                         : %d", media);
+    fflush(stdout);
     //-----------------------------------------
 
 
     //Subtrai a média a todos os pixels
-    for (i = 0; i<*ysize; i++) {
-        for (j = 0; j<*xsize; j++) {
+    for (i = 0; i < ysize; i++) {
+        for (j = 0; j < xsize; j++) {
             Image[i][j] -= media;
         }
     }
@@ -205,39 +217,37 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    fprintf(pointf_out, "%d\n", *xsize);
-    fprintf(pointf_out, "%d\n", *ysize);
+    fprintf(pointf_out, "%d\n", xsize);
+    fprintf(pointf_out, "%d\n", ysize);
     fprintf(pointf_out, "%d\n", media);
 
-    buffer = 0; /* Bits buffered for ouput		*/
-    bits_to_go = 8; /* Number of bits free in buffer	*/
-    Bits_Count = 0;
+    start_outputing_bits();
 
-    for (i = 0; i<*ysize; i += G_BsizeY) {
-        for (j = 0; j<*xsize; j += G_BsizeX) {
+    for (i = 0; i < ysize; i += block_size_y) {
+        for (j = 0; j < xsize; j += block_size_x) {
             //Para todos os blocos
-            for (i1 = 0; i1 < G_BsizeY; i1++) {
-                for (j1 = 0; j1 < G_BsizeX; j1++) {
-                    bloco_original[j1 + (i1 * G_BsizeX)] =
+            for (i1 = 0; i1 < block_size_y; i1++) {
+                for (j1 = 0; j1 < block_size_x; j1++) {
+                    bloco_original[j1 + (i1 * block_size_x)] =
                             Image[i + i1][j + j1];
                 }
             }
 
             distorcao = FLT_MAX;
-            for (n = 0; n < G_num_codewords; n++) { //Varre todos os elementos do codebook
-                aux = quad_err(n);
+            for (n = 0; n < num_codewords; n++) { //Varre todos os elementos do codebook
+                aux = quad_err(n, &block_size_x, &block_size_y);
                 if (aux < distorcao) {
                     indice = n;
                     distorcao = aux;
                 }
             }
 
-            escreve_indice(indice);
+            write_index(indice, bits_index);
 
-            for (i1 = 0; i1 < G_BsizeY; i1++) {
-                for (j1 = 0; j1 < G_BsizeX; j1++) {
+            for (i1 = 0; i1 < block_size_y; i1++) {
+                for (j1 = 0; j1 < block_size_x; j1++) {
                     Image_out[i + i1][j + j1] =
-                            G_dic[indice][i1 * G_BsizeX + j1];
+                            G_dic[indice][i1 * block_size_x + j1];
                 }
             }
 
@@ -252,25 +262,25 @@ int main(int argc, char *argv[]) {
     start = clock();
 
     //Soma novamente a média a todos os pixels
-    for (i = 0; i<*ysize; i++) {
+    for (i = 0; i < ysize; i++) {
 
-        for (j = 0; j<*xsize; j++) {
+        for (j = 0; j < xsize; j++) {
             Image_out[i][j] += media;
         }
     }
     //-----------------------------------------
 
 
-    psnr = PSNR(Image_orig, Image_out, *ysize, *xsize);
-    mse = MSE(Image_orig, Image_out, *ysize, *xsize);
+    psnr = calculate_psnr(Image_orig, Image_out, ysize, xsize);
+    mse = calculate_mse(Image_orig, Image_out, ysize, xsize);
     printf("\n Tempo total de execucao       : %9.3f segundos", elapsed);
     printf("\n Total Bits                    : %ld bits (%ld Bytes)", Bits_Count, Bits_Count / 8);
 
-    taxa = (float) (Bits_Count) / (float) ((*xsize)*(*ysize));
+    taxa = (float) (Bits_Count) / (float) (xsize * ysize);
 
     printf("\n Taxa                          : %.2f bits/pixel", taxa);
-    printf("\n PSNR                          : %f dB", psnr);
-    printf("\n MSE                           : %f", mse);
+    printf("\n psnr                          : %f dB", psnr);
+    printf("\n mse                           : %f", mse);
     printf("\n-----------------------------------------------------\n\n");
 
 
@@ -281,13 +291,13 @@ int main(int argc, char *argv[]) {
 }
 //Fim da funcao main
 
-void escreve_indice(int indice) {
+void write_index(int indice, int bits_index) {
     int k;
     int mask;
     int bit_to_write;
 
-    mask = pow(2, G_bits_indice - 1);
-    for (k = 0; k < G_bits_indice; k++) {
+    mask = pow(2, bits_index - 1);
+    for (k = 0; k < bits_index; k++) {
         bit_to_write = (mask & indice) / mask;
         indice = indice << 1;
         output_bit(bit_to_write, pointf_out);
@@ -305,30 +315,30 @@ void escreve_indice(int indice) {
 //*                                                                            *
 //******************************************************************************
 
-void carrega_dicionario(void) {
+void load_dictionary(char *file_name, int *num_codewords, int *block_size_x, int *block_size_y) {
     int i, j;
 
-    pointf_dic = fopen(dic_name, "r");
+    pointf_dic = fopen(file_name, "r");
     if (pointf_dic == NULL) {
-        fprintf(stderr, "Impossivel abrir dicionario: %s\n\n", dic_name);
+        fprintf(stderr, "Impossivel abrir dicionario: %s\n\n", file_name);
         exit(1);
     }
 
-    fscanf(pointf_dic, "%d\n", &G_num_codewords);
-    fscanf(pointf_dic, "%d\n", &G_BsizeX);
-    fscanf(pointf_dic, "%d\n", &G_BsizeY);
+    fscanf(pointf_dic, "%d\n", num_codewords);
+    fscanf(pointf_dic, "%d\n", block_size_x);
+    fscanf(pointf_dic, "%d\n", block_size_y);
 
     printf("\n-----------------------------------------------------");
-    printf("\n Carregou dicionario %s", dic_name);
+    printf("\n Carregou dicionario %s", file_name);
     printf("\n %d blocos de %dx%d pixels",
-            G_num_codewords, G_BsizeY, G_BsizeX);
+            *num_codewords, *block_size_y, *block_size_x);
     printf("\n-----------------------------------------------------");
     fflush(stdout);
 
-    G_dic = intmatrix(G_num_codewords, G_BsizeY * G_BsizeX);
+    G_dic = int_matrix(*num_codewords, *block_size_y * (*block_size_x));
 
-    for (i = 0; i < G_num_codewords; i++) {
-        for (j = 0; j < G_BsizeX * G_BsizeY; j++) {
+    for (i = 0; i<*num_codewords; i++) {
+        for (j = 0; j < *block_size_x * (*block_size_y); j++) {
             fscanf(pointf_dic, "%d\t", &G_dic[i][j]);
         }
         (void) fscanf(pointf_dic, "\n");
@@ -346,11 +356,11 @@ void carrega_dicionario(void) {
 //*                                                                            *
 //******************************************************************************
 
-float quad_err(int indice_dic) {
+float quad_err(int indice_dic, int *block_size_x, int *block_size_y) {
     int i;
     float tmp = 0;
 
-    for (i = 0; i < G_BsizeX * G_BsizeY; i++) {
+    for (i = 0; i < *block_size_x * (*block_size_y); i++) {
         tmp += ((G_dic[indice_dic][i] - bloco_original[i]) *
                 (G_dic[indice_dic][i] - bloco_original[i]));
     }
@@ -368,7 +378,7 @@ float quad_err(int indice_dic) {
 //*                                                                            *
 //******************************************************************************
 
-void ajuda(char *prgname) {
+void help(char *prgname) {
     printf("\n---------------------------------------------------------------------------------\n");
     printf(" Programa de codificação de imagens baseado em quantização vectorial\n");
     printf("---------------------------------------------------------------------------------\n");
@@ -437,9 +447,9 @@ void read_header_pgm(int *ysize, int *xsize, char *Fname) {
 /* Inputs:                                                                          */
 /* Fname - File name                                                                */
 /*                                                                                  */
-/* Returns 
+/* Returns
  * - the image in char **pellimg
-   - number of rows 
+   - number of rows
    - number of columns                                                              */
 /*                                                                                  */
 #endif /* CODE_NOT_COMPILED */
@@ -495,7 +505,7 @@ void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *Fname) {
 
 /*************************************************************************************/
 /*                                                                                   */
-/*  INTMATRIX - Allocates memory for a matrix of variables of type int               */
+/*  int_matrix - Allocates memory for a matrix of variables of type int               */
 /*                                                                                   */
 /*  Inputs:                                                                          */
 /*    number of rows / nunmber of columnc                                            */
@@ -503,20 +513,20 @@ void read_f_pgm(int **pelimg, int *ysize, int *xsize, char *Fname) {
 /*                                                                                   */
 
 /*************************************************************************************/
-int **intmatrix(int nr, int nc) {
+int **int_matrix(int nr, int nc) {
     int i;
     int **m;
 
     m = (int **) malloc((unsigned) (nr) * sizeof (int *));
     if (!m) {
-        printf("intmatrix() - allocation failure 1 \n");
+        printf("int_matrix() - allocation failure 1 \n");
         exit(1);
     }
 
     for (i = 0; i < nr; i++) {
         m[i] = (int *) malloc((unsigned) (nc) * sizeof (int));
         if (!m[i]) {
-            printf("intmatrix() - allocation failure 2 \n");
+            printf("int_matrix() - allocation failure 2 \n");
             exit(1);
         }
     }
@@ -524,27 +534,33 @@ int **intmatrix(int nr, int nc) {
     return m;
 }
 
-int **intmatrix2(int nr, int nc) {
+float **floatmatrix(int nr, int nc) {
     int i;
-    int vector = (int **) malloc(nr * sizeof (int *));
-    for (i = 0; i < nr; i++) {
-        // vector[i]=&(bloco[i*nc]);
+    float **m;
+
+    m = (float **) malloc(nr * nc * sizeof (float *));
+    if (!m) {
+        printf("floatmatrix() - allocation failure 1 \n");
+        exit(1);
     }
 
-    // aceder a um bloco
-    // bloco [r*nc+c]
-    return 0;
+    for (i = 0; i < nr; i++) {
+        m[i] = (float *) calloc(nc, sizeof (float));
+        if (!m[i]) {
+            printf("floatmatrix() - allocation failure 2 \n");
+            exit(1);
+        }
+    }
+
+    return m;
 }
-
-
-
 
 
 /************************************************************************************/
 /* Peak Signal Noise Ratio                                                          */
 
 /************************************************************************************/
-double PSNR(int **origblk, int **cmpblk, int nline, int npixel) {
+double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     double psnr;
 
@@ -558,13 +574,13 @@ double PSNR(int **origblk, int **cmpblk, int nline, int npixel) {
 
     return psnr;
 }
-/* End of Psnr function */
+/* End of psnr function */
 
 /************************************************************************************/
 /* Mean Squared Error                                                               */
 
 /************************************************************************************/
-double MSE(int **origblk, int **cmpblk, int nline, int npixel) {
+double calculate_mse(int **origblk, int **cmpblk, int nline, int npixel) {
     int i, j;
     long cnt = 0;
     double mse;
@@ -578,7 +594,7 @@ double MSE(int **origblk, int **cmpblk, int nline, int npixel) {
 
     return (mse / cnt);
 }
-/* End of MSE function */
+/* End of mse function */
 
 /* INITIALISE BIT OUTPUT */
 void start_outputing_bits() {
@@ -724,10 +740,6 @@ unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch) {
     }
     return m;
 }
-
-
-
-
 
 
 
