@@ -87,20 +87,29 @@ HandleError(cudaError_t err, const char *file, int line) {
 
 /**
  * <p>HANDLE_ERROR macro.</p>
- * 
+ *
  * Wrapping macro for HandleError function (provides "file" and "line" parameters).
- * 
+ *
  * @param err [IN] CUDA error
  * @return on error, the calling process is terminated
  **/
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
-const int G_ThreadsPerBlock = 512;//MAX_T;;
-const int G_BlocksPerGrid = 65535;//
+const int G_ThreadsPerBlock = 512; //MAX_T;;
+const int G_BlocksPerGrid = 65535; //
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                             CUDA KERNEL                                  ///
 ////////////////////////////////////////////////////////////////////////////////
-__global__ void encoding_pgm(int num_codewords, int block_x, int block_y, int *dev_dict, int *dev_pgm, int *dev_pgm_coded){
+/**
+ * <p>calculate all quad error and create the pgm encoded</p>
+ * 
+ * @param num_codewords number of rows of the dictionary
+ * @param block_size size of the block (horizontal * verticar coordinates)
+ * @param dev_dict ditionary data in memory
+ * @param dev_pgm pgm image in memory
+ * @param dev_pgm_coded encoding result
+ */
+__global__ void encoding_pgm(int num_codewords, int pgm_block_size,int *dev_dict, int *dev_pgm, int *dev_pgm_coded){
        __shared__ float cache[G_ThreadsPerBlock];
 
        int i;
@@ -109,14 +118,13 @@ __global__ void encoding_pgm(int num_codewords, int block_x, int block_y, int *d
        float temp = 0.0;
 
        while(tid < num_codewords){
-               i =0; 
-               int idx_dict = threadIdx.x*block_x*block_y;
+               i =0;
+               int idx_dict = threadIdx.x * pgm_block_size;
                int idx_block = 0;
-               while (i < (block_x * block_y)){
+               while (i < pgm_block_size){
                        idx_block = (blockIdx.x * blockDim.x) + i;
                        temp += ((dev_dict[idx_dict+i]-dev_pgm[idx_block])*(dev_dict[idx_dict+i]-dev_pgm[idx_block]));
                        i++;
-               //__syncthreads();
                }
                cache[cache_index]=temp;
                __syncthreads();
@@ -134,7 +142,6 @@ __global__ void encoding_pgm(int num_codewords, int block_x, int block_y, int *d
        }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 ///                           PROTOTYPES DEFINITION                          ///
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,8 +153,7 @@ int **int_matrix(int nr, int nc);
 float **floatmatrix(int nr, int nc);
 int *int_vector(int nr, int nc);
 void sort_pgm_blocks(int *v_pgm, int *v_sort_pgm, int block_x, int block_y, int xsize, int ysize);
-float quad_err(int index_dic, int *block_size_x, int *block_size_y,
-        int *original_block);
+float quad_err(int index_dic, int block_size, int *original_block);
 void load_dictionary(char *file_name, int *num_codewords, int *block_size_x,
         int *block_size_y);
 double calculate_psnr(int **origblk, int **cmpblk, int nline, int npixel);
@@ -203,6 +209,7 @@ main(int argc, char *argv[]) {
     /*
      * The following variables are loaded from the dictionary  file
      **/
+    int block_size = 0;
     int block_size_x = 0;
     int block_size_y = 0;
     int num_codewords = 0;
@@ -230,8 +237,9 @@ main(int argc, char *argv[]) {
     //Carrega dicionario
     load_dictionary(dic_name, &num_codewords, &block_size_x, &block_size_y);
     bits_index = ceil(log(num_codewords) / log(2));
+    block_size = block_size_x * block_size_y;
 
-    original_block = (int *) calloc(block_size_x * block_size_y, sizeof (int));
+    original_block = (int *) calloc(block_size, sizeof (int));
     if (!original_block) {
         printf("int_matrix() - allocation failure 1 \n");
         exit(1);
@@ -303,55 +311,69 @@ main(int argc, char *argv[]) {
     v_pgm_sorted = int_vector(ysize, xsize);
     sort_pgm_blocks(v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize, ysize);
 
+
+/*
     // calculate the quad error. (this will be executed on GPU)
-    /*int count = 0;
-    for (i = 0; i < ysize * xsize; i += (block_size_y * block_size_x)) {
-        for (j = 0; j < block_size_y * block_size_x; j++) {
+    for (i = 0; i < ysize * xsize; i += (block_size)) {
+        for (j = 0; j < block_size; j++) {
             original_block[j] =
                     v_pgm_sorted[i + j];
         }
         distortion = FLT_MAX;
         for (n = 0; n < num_codewords; n++) { //Varre todos os elementos do codebook
             aux =
-                    quad_err(n, &block_size_x, &block_size_y, original_block);
+                    quad_err(n, block_size, original_block);
             if (aux < distortion) {
                 index = n;
                 distortion = aux;
             }
         }
 
-        v_pgm_coded[count] = index;
-        count++;
+        v_pgm_coded[i/(block_size)] = index;
+    }
+*/
 
-    }*/
 
-    
-    // 
-    int *dev_pgm;// = int_vector(ysize, xsize);
-    int *dev_dict;// = int_vector(ysize, xsize);
-    int *dev_pgm_coded;// = int_vector(ysize/block_size_y, xsize/block_size_x);
+    //
+    // CUDA STUFF
+    // calculate all quad error and create the pgm encoded
+    //
+
+    // the gpu device vectors
+    int *dev_pgm;
+    int *dev_dict;
+    int *dev_pgm_coded;
+
+    // alloc memory to cuda vectors
+    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm, (size_t) (ysize * xsize) * sizeof (int)));
+    HANDLE_ERROR(cudaMalloc((void **) &dev_dict, (size_t) (ysize * xsize) * sizeof (int)));
+    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm_coded, G_BlocksPerGrid * sizeof (int)));
+
+    // copy the vectors data fom host to gpu device
+    HANDLE_ERROR(cudaMemcpy(dev_pgm, v_pgm, (ysize * xsize) * sizeof (int), cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(dev_dict, G_dic, num_codewords * block_size * sizeof (int), cudaMemcpyHostToDevice));
+
     // execute GPU KERNEL
-    HANDLE_ERROR (cudaMalloc ((void **) &dev_pgm, (size_t)(ysize * xsize) * sizeof (int)));
-        HANDLE_ERROR (cudaMalloc ((void **) &dev_dict, (size_t)(ysize * xsize) * sizeof (int)));
-       HANDLE_ERROR (cudaMalloc ((void **) &dev_pgm_coded, G_BlocksPerGrid * sizeof (int)));
-       //dev_result = (int *) malloc((unsigned) (G_BlocksPerGrid) * sizeof (int));
-       HANDLE_ERROR (cudaMemcpy (dev_pgm, v_pgm, (ysize * xsize) * sizeof (int), cudaMemcpyHostToDevice));
-       HANDLE_ERROR (cudaMemcpy (dev_dict, G_dic, num_codewords * block_size_y * block_size_x* sizeof(int), cudaMemcpyHostToDevice));
-      
-       encoding_pgm<<<G_BlocksPerGrid,G_ThreadsPerBlock>>> (num_codewords, block_size_x, block_size_y, dev_dict, dev_pgm, dev_pgm_coded);
-       
-       //v_pgm_coded = (int *) malloc((unsigned) G_BlocksPerGrid * sizeof (int));
-       HANDLE_ERROR(cudaMemcpy(v_pgm_coded, dev_pgm_coded, (G_BlocksPerGrid)*sizeof(int), cudaMemcpyDeviceToHost));
-       printf("-----------------------------------------------------------------------------------------------\n");
-       for(i=0;i<G_BlocksPerGrid;i++){
-               printf("%d", v_pgm_coded[i]);
-       }
-       printf("-----------------------------------------------------------------------------------------------\n");
+    encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> > (num_codewords, block_size_x, block_size_y, dev_dict, dev_pgm, dev_pgm_coded);
+
+    // copy the vector with the pgm coded from dpu decive to host
+    HANDLE_ERROR(cudaMemcpy(v_pgm_coded, dev_pgm_coded, (G_BlocksPerGrid) * sizeof (int), cudaMemcpyDeviceToHost));
+
+    // show result
+    printf("-----------------------------------------------------------------------------------------------\n");
+    for (i = 0; i < G_BlocksPerGrid; i++) {
+        printf("%d", v_pgm_coded[i]);
+    }
+    printf("-----------------------------------------------------------------------------------------------\n");
+
+    // cuda free memory
+    cudaFree(dev_pgm); dev_pgm = NULL;
+    cudaFree(dev_dict); dev_dict = NULL;
+    cudaFree(dev_pgm_coded); dev_pgm_coded = NULL;
+     
 
 
-
-
-    // change this to vector to! future work
+    // verificar esta código... 
     for (i = 0; i < ysize; i += block_size_y) {
         for (j = 0; j < xsize; j += block_size_x) {
             for (i1 = 0; i1 < block_size_y; i1++) {
@@ -414,11 +436,13 @@ main(int argc, char *argv[]) {
         free(image_out[i]);
     }
 
-    free(image_orig);
-    free(image_out);
-    free(v_pgm_coded);
-    free(v_pgm);
-    free(G_dic);
+    //free memory
+    free(image_orig); image_orig = NULL;
+    free(image_out); image_out = NULL;
+    free(v_pgm_coded); v_pgm_coded = NULL;
+    free(v_pgm); v_pgm = NULL;
+    free(v_pgm_sorted); v_pgm_sorted = NULL;
+    free(G_dic); G_dic = NULL;
 
     return EXIT_SUCCESS;
 }
@@ -509,22 +533,20 @@ load_dictionary(char *file_name, int *num_codewords, int *block_size_x,
  * <p> Calculate the square error between a vector and a training set of the codebook vector. </p>
  *
  * @param index_dic index of the dictionary row
- * @param block_size_x horizontal size of the block
- * @param block_size_y vertical size of the block
+ * @param block_size size of the block (horizontal coordinate * vertical coordinate)
  * @param original_block the current block
  * @return the square error value
  */
 float
-quad_err(int index_dic, int *block_size_x, int *block_size_y,
+quad_err(int index_dic, int block_size,
         int *original_block) {
     int i;
     float tmp = 0;
 
-    for (i = 0; i < *block_size_x * (*block_size_y); i++) {
+    for (i = 0; i < block_size; i++) {
         tmp +=
-                ((G_dic[index_dic * (*block_size_x * (*block_size_y)) + i] -
-                original_block[i]) * (G_dic[index_dic *
-                (*block_size_x * (*block_size_y)) + i] -
+                ((G_dic[index_dic * block_size + i] -
+                original_block[i]) * (G_dic[index_dic * block_size + i] -
                 original_block[i]));
     }
     return tmp;
@@ -532,7 +554,7 @@ quad_err(int index_dic, int *block_size_x, int *block_size_y,
 
 /**
  *  <p> Reads the information of a pgm file to calculate the horizontal and vertical size.</p>
- * 
+ *
  * @param ysize image vertical dimension
  * @param xsize image horizontal dimensio
  * @param file_name file name of the image that will be coded
@@ -1011,3 +1033,4 @@ ucmatrix(int nrl, int nrh, int ncl, int nch) {
     }
     return m;
 }
+
