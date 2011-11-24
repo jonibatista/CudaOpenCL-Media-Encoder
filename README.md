@@ -19,10 +19,8 @@ Utilização
 	sh run *TIPO_DE_IMAGEM*
 
 #### Tipos de imagem	
-*all* - codifica todas
-
+*all* - codifica todas as imagens
 *small* - codifica a mais pequena
-
 *medium* - codifica a de tamanho médio
 
 
