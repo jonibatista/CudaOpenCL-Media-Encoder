@@ -20,7 +20,9 @@ Utilização
 
 #### Tipos de imagem	
 *all* - codifica todas as imagens
+
 *small* - codifica a mais pequena
+
 *medium* - codifica a de tamanho médio
 
 
