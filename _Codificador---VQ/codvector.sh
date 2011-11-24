@@ -7,11 +7,19 @@ DictsDir=../Dicts
 CodedDir=../Coded
 DictFName=dic_1024_4x4
 
-#Files_L="ILikeEI"
 
-Files_L="Informatica_e_no_IPL---cartaz
-ILikeEI
-testPatterns_1024"
+if [ "$1" = "small" ]; then
+	#echo "small"
+	Files_L="testPatterns_1024"
+elif [ "$1" = "medium" ]; then
+	#echo "medium"
+	Files_L="ILikeEI"
+else 
+	#echo "no params";
+	Files_L="Informatica_e_no_IPL---cartaz
+	ILikeEI
+	testPatterns_1024"
+fi
 
 
 for File in $Files_L

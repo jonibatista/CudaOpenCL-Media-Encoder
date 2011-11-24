@@ -1,0 +1,17 @@
+#!/bin/bash
+
+clear
+echo "############### MAKE Codificador ################"
+cd _Codificador---VQ/
+make
+
+echo "############### sh codevector.sh ################"
+sh codvector.sh $1
+
+echo "######################################################"
+echo "############### Output match verifier ################"
+cd ../OutputVerifier/
+sh verifier.sh $1
+echo "######################################################"
+
+

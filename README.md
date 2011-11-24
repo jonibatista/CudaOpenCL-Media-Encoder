@@ -13,6 +13,16 @@ Neste projeto pretende-se adaptar uma implementação do algoritmo Vector Quanti
 tar sobre a forma de código fonte C) C)(Vector Quantization) ao paradigma de programação manycore
 computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 
+
+Utilização
+----------
+	sh run *TIPO_DE_IMAGEM*
+	
+*all* - codifica todas
+*small* - codifica a mais pequena
+*medium* - codifica a de tamanho médio
+
+
 Alterações Codificador
 ----------
 	int **Image_orig;
