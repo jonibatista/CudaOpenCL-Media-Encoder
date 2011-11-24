@@ -17,10 +17,14 @@ computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 Utilização
 ----------
 	sh run *TIPO_DE_IMAGEM*
-	
+
+#### Tipos de imagem	
 *all* - codifica todas
+
 *small* - codifica a mais pequena
+
 *medium* - codifica a de tamanho médio
+
 
 
 Alterações Codificador
