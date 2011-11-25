@@ -1,7 +1,5 @@
 # Folders #
 ###########
-#Examples---PGM/
-#Training_pgm/
 Coded/*.coded
 
 # System Files #
@@ -11,5 +9,7 @@ Coded/*.coded
 # Compiled source #
 ###################
 *.o
-*.exe
 
+# Documentation content #
+#########################
+documentation/[^.]*
