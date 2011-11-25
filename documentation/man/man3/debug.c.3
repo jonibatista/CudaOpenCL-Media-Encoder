@@ -1,0 +1,196 @@
+.TH "debug.c" 3 "Fri Nov 25 2011" "Version v1.0.0" "Cuda Codificador" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+debug.c \- 
+.PP
+Funções de depuração  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdio.h>\fP
+.br
+\fC#include <stdarg.h>\fP
+.br
+\fC#include <stdlib.h>\fP
+.br
+\fC#include <string.h>\fP
+.br
+\fC#include <errno.h>\fP
+.br
+\fC#include <netdb.h>\fP
+.br
+\fC#include 'debug.h'\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBdebug\fP (const char *file, const int line, char *fmt,...)"
+.br
+.ti -1c
+.RI "void \fBwarning\fP (const char *file, const int line, char *fmt,...)"
+.br
+.ti -1c
+.RI "void \fBerror\fP (const char *file, const int line, int exitCode, char *fmt,...)"
+.br
+.ti -1c
+.RI "void \fBh_warning\fP (const char *file, const int line, char *fmt,...)"
+.br
+.ti -1c
+.RI "void \fBh_error\fP (const char *file, const int line, int exitCode, char *fmt,...)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Funções de depuração 
+
+Funções de depuração que serão chamadas através das respectivas macros definidas no ficheiro \fBdebug.h\fP. O objectivo destas funções é auxiliar o tratamento de erros e a depuração
+.PP
+\fBAuthor:\fP
+.RS 4
+Miguel Frade, Patricio Domingues, Vitor Carreira 
+.RE
+.PP
+\fBDate:\fP
+.RS 4
+Agosto de 2003 
+.RE
+.PP
+\fBVersion:\fP
+.RS 4
+2 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "void debug (const char *file, const intline, char *fmt, ...)"Esta função deve ser utilizada para auxiliar a depuração de programas. Esta função \fBnão deve\fP ser chamada directamente, mas sim através da macro \fBDEBUG()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfile\fP nome do ficheiro (através da macro DEBUG) 
+.br
+\fIline\fP linha onde a função foi chamada (através da macro DEBUG) 
+.br
+\fIfmt\fP string de formatação como no 'printf' 
+.br
+\fI...\fP nº variável de parâmetros 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A função não retorna nada 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBDEBUG\fP 
+.RE
+.PP
+
+.SS "void error (const char *file, const intline, intexitCode, char *fmt, ...)"Função que envia para o canal de erros a mensagem 'ERROR' rotulada com o nome do ficheiro e da linha da função chamante, e ainda da mensagem de erro do sistema. A função \fBnão deve\fP ser chamada directamente, mas sim através da macro \fBERROR()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfile\fP nome do ficheiro fonte da função chamante (através da macro ERROR) 
+.br
+\fIline\fP linha onde a função foi chamada (através da macro ERROR) 
+.br
+\fIexitCode\fP valor passado à função 'exit()' 
+.br
+\fIfmt\fP string de formatação como no 'printf' 
+.br
+\fI...\fP nº variável de parâmetros 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A função não retorna nada 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBERROR\fP 
+.RE
+.PP
+
+.SS "void h_error (const char *file, const intline, intexitCode, char *fmt, ...)"Função que envia para o canal de erros a mensagem 'H_ERROR' rotulada com o nome do ficheiro e da linha da função chamante, e ainda da mensagem de erro do sistema. A função \fBnão deve\fP ser chamada directamente, mas sim através da macro \fBH_ERROR()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfile\fP nome do ficheiro fonte da função chamante (através da macro H_ERROR) 
+.br
+\fIline\fP linha onde a função foi chamada (através da macro H_ERROR) 
+.br
+\fIexitCode\fP valor passado à função 'exit()' 
+.br
+\fIfmt\fP string de formatação como no 'printf' 
+.br
+\fI...\fP nº variável de parâmetros 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A função não retorna nada 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBH_ERROR\fP 
+.RE
+.PP
+
+.SS "void h_warning (const char *file, const intline, char *fmt, ...)"Função que envia para o canal de erros a mensagem 'H_WARNING' rotulada com o nome do ficheiro e da linha da função chamante, e ainda da mensagem de erro do sistema. A função \fBnão deve\fP ser chamada directamente, mas sim através da macro \fBH_WARNING()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfile\fP nome do ficheiro fonte da função chamante (através da macro H_WARNING) 
+.br
+\fIline\fP linha onde a função foi chamada (através da macro H_WARNING) 
+.br
+\fIfmt\fP string de formatação como no 'printf' 
+.br
+\fI...\fP nº variável de parâmetros 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A função não retorna nada 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBH_WARNING\fP 
+.RE
+.PP
+
+.SS "void warning (const char *file, const intline, char *fmt, ...)"Função que envia para o canal de erros a mensagem 'WARNING' rotulada com o nome do ficheiro e da linha da função chamante e ainda da mensagem de erro do sistema. A função \fBnão deve\fP ser chamada directamente, mas sim através da macro \fBWARNING()\fP.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfile\fP nome do ficheiro fonte da função chamante (através da macro WARNING) 
+.br
+\fIline\fP linha onde a função foi chamada (através da macro WARNING) 
+.br
+\fIfmt\fP string de formatação como no 'printf' 
+.br
+\fI...\fP nº variável de parâmetros 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+A função não retorna nada 
+.RE
+.PP
+\fBSee also:\fP
+.RS 4
+\fBWARNING\fP 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Cuda Codificador from the source code.

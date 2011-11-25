@@ -1,0 +1,344 @@
+.TH "params.c" 3 "Fri Nov 25 2011" "Version v1.0.0" "Cuda Codificador" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+params.c \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdio.h>\fP
+.br
+\fC#include <stdlib.h>\fP
+.br
+\fC#include <string.h>\fP
+.br
+\fC#include <getopt.h>\fP
+.br
+\fC#include 'params.h'\fP
+.br
+
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fBline_list\fP"
+.br
+.in -1c
+.SS "Defines"
+
+.in +1c
+.ti -1c
+.RI "#define \fBFIX_UNUSED\fP(X)   (void) (X)"
+.br
+.ti -1c
+.RI "#define \fBCONFIG_FILE_LINE_SIZE\fP   2048"
+.br
+.ti -1c
+.RI "#define \fBADDITIONAL_ERROR\fP   ' in configuration file '"
+.br
+.ti -1c
+.RI "#define \fBCONFIG_FILE_LINE_BUFFER_SIZE\fP   (CONFIG_FILE_LINE_SIZE+3)"
+.br
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBcmdline_parser_arg_type\fP { \fBARG_NO\fP, \fBARG_STRING\fP }"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBcmdline_parser_print_version\fP (void)"
+.br
+.ti -1c
+.RI "void \fBcmdline_parser_print_help\fP (void)"
+.br
+.ti -1c
+.RI "void \fBcmdline_parser_init\fP (struct \fBgengetopt_args_info\fP *args_info)"
+.br
+.ti -1c
+.RI "void \fBcmdline_parser_params_init\fP (struct \fBcmdline_parser_params\fP *params)"
+.br
+.ti -1c
+.RI "struct \fBcmdline_parser_params\fP * \fBcmdline_parser_params_create\fP (void)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_dump\fP (FILE *outfile, struct \fBgengetopt_args_info\fP *args_info)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_file_save\fP (const char *filename, struct \fBgengetopt_args_info\fP *args_info)"
+.br
+.ti -1c
+.RI "void \fBcmdline_parser_free\fP (struct \fBgengetopt_args_info\fP *args_info)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser\fP (int argc, char **argv, struct \fBgengetopt_args_info\fP *args_info)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_ext\fP (int argc, char **argv, struct \fBgengetopt_args_info\fP *args_info, struct \fBcmdline_parser_params\fP *params)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser2\fP (int argc, char **argv, struct \fBgengetopt_args_info\fP *args_info, int override, int initialize, int check_required)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_required\fP (struct \fBgengetopt_args_info\fP *args_info, const char *prog_name)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_configfile\fP (const char *filename, struct \fBgengetopt_args_info\fP *args_info, int override, int initialize, int check_required)"
+.br
+.ti -1c
+.RI "int \fBcmdline_parser_config_file\fP (const char *filename, struct \fBgengetopt_args_info\fP *args_info, struct \fBcmdline_parser_params\fP *params)"
+.br
+.in -1c
+.SS "Variables"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBgengetopt_args_info_purpose\fP = 'O programa é responsavel por codificar uma imagem usando CUDA'"
+.br
+.RI "\fIthe purpose string of the program \fP"
+.ti -1c
+.RI "const char * \fBgengetopt_args_info_usage\fP = 'Usage: Encoder [OPTIONS]... [FILES]...'"
+.br
+.RI "\fIthe usage string of the program \fP"
+.ti -1c
+.RI "const char * \fBgengetopt_args_info_description\fP = ''"
+.br
+.ti -1c
+.RI "const char * \fBgengetopt_args_info_help\fP []"
+.br
+.RI "\fIall the lines making the help output \fP"
+.in -1c
+.SH "Define Documentation"
+.PP 
+.SS "#define ADDITIONAL_ERROR   ' in configuration file '"
+.SS "#define CONFIG_FILE_LINE_BUFFER_SIZE   (CONFIG_FILE_LINE_SIZE+3)"
+.SS "#define CONFIG_FILE_LINE_SIZE   2048"
+.SS "#define FIX_UNUSED(X)   (void) (X)"
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBcmdline_parser_arg_type\fP"
+.PP
+\fBEnumerator: \fP
+.in +1c
+.TP
+\fB\fIARG_NO \fP\fP
+.TP
+\fB\fIARG_STRING \fP\fP
+
+.SH "Function Documentation"
+.PP 
+.SS "int cmdline_parser (intargc, char **argv, struct \fBgengetopt_args_info\fP *args_info)"The command line parser 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargc\fP the number of command line options 
+.br
+\fIargv\fP the command line options 
+.br
+\fIargs_info\fP the structure where option information will be stored 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+
+.SS "int cmdline_parser2 (intargc, char **argv, struct \fBgengetopt_args_info\fP *args_info, intoverride, intinitialize, intcheck_required)"The command line parser (version with additional parameters - deprecated) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargc\fP the number of command line options 
+.br
+\fIargv\fP the command line options 
+.br
+\fIargs_info\fP the structure where option information will be stored 
+.br
+\fIoverride\fP whether to override possibly already present options 
+.br
+\fIinitialize\fP whether to initialize the option structure my_args_info 
+.br
+\fIcheck_required\fP whether to check that all required options were provided 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+\fBDeprecated\fP
+.RS 4
+use \fBcmdline_parser_ext()\fP instead 
+.RE
+.PP
+
+.SS "int cmdline_parser_config_file (const char *filename, struct \fBgengetopt_args_info\fP *args_info, struct \fBcmdline_parser_params\fP *params)"The config file parser 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfilename\fP the name of the config file 
+.br
+\fIargs_info\fP the structure where option information will be stored 
+.br
+\fIparams\fP additional parameters for the parser 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+
+.SS "int cmdline_parser_configfile (const char *filename, struct \fBgengetopt_args_info\fP *args_info, intoverride, intinitialize, intcheck_required)"The config file parser (deprecated version) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfilename\fP the name of the config file 
+.br
+\fIargs_info\fP the structure where option information will be stored 
+.br
+\fIoverride\fP whether to override possibly already present options 
+.br
+\fIinitialize\fP whether to initialize the option structure my_args_info 
+.br
+\fIcheck_required\fP whether to check that all required options were provided 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+\fBDeprecated\fP
+.RS 4
+use \fBcmdline_parser_config_file()\fP instead 
+.RE
+.PP
+
+.SS "int cmdline_parser_dump (FILE *outfile, struct \fBgengetopt_args_info\fP *args_info)"Save the contents of the option struct into an already open FILE stream. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIoutfile\fP the stream where to dump options 
+.br
+\fIargs_info\fP the option struct to dump 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+
+.SS "int cmdline_parser_ext (intargc, char **argv, struct \fBgengetopt_args_info\fP *args_info, struct \fBcmdline_parser_params\fP *params)"The command line parser (version with additional parameters) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargc\fP the number of command line options 
+.br
+\fIargv\fP the command line options 
+.br
+\fIargs_info\fP the structure where option information will be stored 
+.br
+\fIparams\fP additional parameters for the parser 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+
+.SS "int cmdline_parser_file_save (const char *filename, struct \fBgengetopt_args_info\fP *args_info)"Save the contents of the option struct into a (text) file. This file can be read by the config file parser (if generated by gengetopt) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIfilename\fP the file where to save 
+.br
+\fIargs_info\fP the option struct to save 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+0 if everything went fine, NON 0 if an error took place 
+.RE
+.PP
+
+.SS "void cmdline_parser_free (struct \fBgengetopt_args_info\fP *args_info)"Deallocates the string fields of the \fBgengetopt_args_info\fP structure (but does not deallocate the structure itself) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargs_info\fP the structure to deallocate 
+.RE
+.PP
+
+.SS "void cmdline_parser_init (struct \fBgengetopt_args_info\fP *args_info)"Initializes the passed \fBgengetopt_args_info\fP structure's fields (also set default values for options that have a default) 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargs_info\fP the structure to initialize 
+.RE
+.PP
+
+.SS "struct \fBcmdline_parser_params\fP* cmdline_parser_params_create (void)\fC [read]\fP"Allocates dynamically a \fBcmdline_parser_params\fP structure and initializes all its fields to their default values 
+.PP
+\fBReturns:\fP
+.RS 4
+the created and initialized \fBcmdline_parser_params\fP structure 
+.RE
+.PP
+
+.SS "void cmdline_parser_params_init (struct \fBcmdline_parser_params\fP *params)"Initializes all the fields a \fBcmdline_parser_params\fP structure to their default values 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIparams\fP the structure to initialize 
+.RE
+.PP
+
+.SS "void cmdline_parser_print_help (void)"Print the help 
+.SS "void cmdline_parser_print_version (void)"Print the version 
+.SS "int cmdline_parser_required (struct \fBgengetopt_args_info\fP *args_info, const char *prog_name)"Checks that all the required options were specified 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIargs_info\fP the structure to check 
+.br
+\fIprog_name\fP the name of the program that will be used to print possible errors 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+.RE
+.PP
+
+.SH "Variable Documentation"
+.PP 
+.SS "const char* \fBgengetopt_args_info_description\fP = ''"
+.SS "const char* \fBgengetopt_args_info_help\fP[]"\fBInitial value:\fP
+.PP
+.nf
+ {
+  '  -h, --help               Print help and exit',
+  '  -V, --version            Print version and exit',
+  '  -i, --imagem=STRING      nome da imagem PGM a ser codificada',
+  '  -d, --dicionario=STRING  nome do dicionario de codificação',
+  '  -o, --ficheiro=STRING    nome do ficheiro de saída (ficheiro codificado)',
+    0
+}
+.fi
+.PP
+all the lines making the help output 
+.SS "const char* \fBgengetopt_args_info_purpose\fP = 'O programa é responsavel por codificar uma imagem usando CUDA'"
+.PP
+the purpose string of the program 
+.SS "const char* \fBgengetopt_args_info_usage\fP = 'Usage: Encoder [OPTIONS]... [FILES]...'"
+.PP
+the usage string of the program 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Cuda Codificador from the source code.

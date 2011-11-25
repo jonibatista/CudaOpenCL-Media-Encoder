@@ -68,9 +68,9 @@
 ///************************ END CONSTANTES DEFINITION ***********************///
 
 
-///**************************************************************************///
-///*                          PROTOTYPES DEFINITION                         *///
-///**************************************************************************///
+///////////////////////////////////////////////////////////////////////////
+///                          PROTOTYPES DEFINITION                         ///
+/////////////////////////////////////////////////////////////////////
 void read_header_pgm(int *ysize, int *xsize, char *file_name);
 void read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name);
 void v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name);
@@ -89,11 +89,11 @@ unsigned char **ucmatrix(int nrl, int nrh, int ncl, int nch);
 //Funcoes de escrita de bits para o ficheiro
 void output_bit(int bit, FILE* output_file, int *buffer, int *bits_to_go, long *bits_count);
 void done_outputing_bits(FILE* output_file, int *buffer, int *bits_to_go);
-///************************ END PROTOTYPES DEFINITION ***********************///
+/// END PROTOTYPES DEFINITION ///
 
 
 ///**************************************************************************///
-///*                              GLOBAL VARIABLES                          *///
+///                              GLOBAL VARIABLES                          ///
 ///**************************************************************************///
 int *G_dic;
 
