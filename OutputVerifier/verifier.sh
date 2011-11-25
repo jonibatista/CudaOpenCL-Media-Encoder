@@ -32,9 +32,9 @@ do
 	FileToVerify=$CodedDirToVerify/${File}_dic_1024_4x4.coded
 	
 	if [ $(getFileHash $FileFinal) = $(getFileHash $FileToVerify) ]; then
-		echo "MATCHES ===== ${File}_dic_1024_4x4 !";
+		echo  "\tMATCH - ${File}_dic_1024_4x4 !";
 	else 
-		echo "DOES NOT MATCH ===== ${File}_dic_1024_4x4 !";
+		echo "\tDOES NOT MATCH - ${File}_dic_1024_4x4 !";
 		exit 0;
 	fi
 	

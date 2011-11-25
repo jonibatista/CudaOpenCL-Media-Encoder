@@ -1,12 +1,20 @@
 #!/bin/bash
+
+# Clean coded data
+rm -r Coded
 mkdir Coded
-rm Coded/*
+
+
+# MAKE codificador
 clear
 echo "############### MAKE Codificador ################"
-cd _Codificador---VQ/
+cd _Codificador/
 make clean
 make params
 make all
+
+
+# Run codvector
 
 echo "############### sh codevector.sh ################"
 sh codvector.sh $1
@@ -17,5 +25,13 @@ echo "######################################################"
 cd ../OutputVerifier/
 sh verifier.sh $1
 echo "######################################################"
+
+# Clean coded data
+cd ..
+rm -r Coded
+rm _Codificador/*.coded &>/dev/null
+
+# Create tree output
+tree -o tree.out
 
 
