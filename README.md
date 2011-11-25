@@ -20,7 +20,7 @@ Instalação
 
 Utilização
 ----------
-	sh run *TIPO_DE_IMAGEM*
+	./run *TIPO_DE_IMAGEM*
 
 #### Tipos de imagem	
 *all* - codifica todas as imagens
