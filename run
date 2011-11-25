@@ -1,5 +1,6 @@
 #!/bin/bash
-
+mkdir Coded
+rm Coded/*
 clear
 echo "############### MAKE Codificador ################"
 cd _Codificador---VQ/
