@@ -12,4 +12,7 @@ Coded/*.coded
 
 # Documentation content #
 #########################
-documentation/[^.]*
+documentation/html/[^.]*
+documentation/man/[^.]*
+documentation/latex/[^.]*
+documentation/rtf/[^.]*
