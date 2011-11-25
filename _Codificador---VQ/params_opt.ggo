@@ -1,10 +1,13 @@
+# usage
+# gengetopt --file-name=params --conf-parser --unamed-opts < params_opt.ggo 
+
 package "Encoder"
 version "v1.0.0"
 purpose "O programa é responsavel por codificar uma imagem usando CUDA"
 
-#options
+# options
 option "imagem"	i "nome da imagem PGM a ser codificada"	string yes
 option "dicionario" d "nome do dicionario de codificação" string yes
 option	"ficheiro" o "nome do ficheiro de saída (ficheiro codificado)" string yes
 
-#gengetopt --file-name=params --conf-parser --unamed-opts < params_opt.ggo 
+

@@ -42,6 +42,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "params.h"
 
 
 ///**************************************************************************///
@@ -50,6 +51,9 @@
 #define ERROR_INVALID_PARAMETERS 1
 #define ERROR_ALLOCATE_MEMORY 2
 #define ERROR_OPEN_FILE
+#define ERROR_INVALID_PARAMETERS 1
+
+
 ///******************* END CONSTANTES ERROR DEFINITION **********************///
 
 
@@ -100,7 +104,9 @@ int **G_dic;
 //******************************************************************************
 
 int main(int argc, char *argv[]) {
-    int **Image, **Image_orig, **Image_out;
+  struct gengetopt_args_info args_info;
+  
+  int **Image, **Image_orig, **Image_out;
     int *original_block;
 
     int i, j, i1, j1, n;
@@ -134,15 +140,17 @@ int main(int argc, char *argv[]) {
 
     FILE *pointf_out;
 
-    //Verifica argumentos
-    if (argc < 3) {
-        help(argv[0]);
-        return 0;
+
+
+// validate parameters
+  if (cmdline_parser (argc, argv, &args_info) != 0)
+    {
+      exit (ERROR_INVALID_PARAMETERS);
     }
 
-    inname = argv[1];
-    dic_name = argv[2];
-    outname = argv[3];
+    inname = args_info.imagem_arg;
+    dic_name = args_info.dicionario_arg;
+    outname = args_info.ficheiro_arg;
 
 
     //Carrega dicionario

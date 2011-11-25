@@ -4,7 +4,9 @@ rm Coded/*
 clear
 echo "############### MAKE Codificador ################"
 cd _Codificador---VQ/
-make
+make clean
+make params
+make all
 
 echo "############### sh codevector.sh ################"
 sh codvector.sh $1
