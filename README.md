@@ -13,6 +13,10 @@ Neste projeto pretende-se adaptar uma implementação do algoritmo Vector Quanti
 tar sobre a forma de código fonte C) C)(Vector Quantization) ao paradigma de programação manycore
 computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 
+Instalação
+----------
+	./configure
+
 
 Utilização
 ----------

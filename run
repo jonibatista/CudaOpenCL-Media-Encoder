@@ -3,13 +3,13 @@
 # Clean coded data
 rm -r Coded
 mkdir Coded
-
+rm _Codificador/*.coded >/dev/null 2>&1
 
 # MAKE codificador
 clear
 echo "\n############### MAKE Codificador ################\n"
 cd _Codificador/
-make clean
+make clean-all
 make params
 make all
 
@@ -25,10 +25,17 @@ cd ../OutputVerifier/
 sh verifier.sh $1
 echo "############################################################\n"
 
+
+# Clean .o files
+cd ../_Codificador/
+make cleano >/dev/null 2>&1
+
 # Clean coded data
 cd ..
 rm -r Coded
 rm _Codificador/*.coded >/dev/null 2>&1
+
+
 
 # Create tree output
 tree -o tree.out
