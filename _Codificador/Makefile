@@ -22,7 +22,7 @@ OBJECTS1 = params.o
 
 
 
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
 #LIB_CUDA := -L$(LD) -lcudart
 
 
