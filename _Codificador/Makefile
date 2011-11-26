@@ -1,33 +1,56 @@
-# MAKEFILE for mmp.pt
-CC 	= gcc
-# ORIGINAL
-# CFLAGS 	= -g -pg -I$(LIBDIR) -I$(LIBDIR1) -Wall
-CFLAGS 	= -g -ffloat-store -O3 -Wno-unused-result -Wall #-pg #-O3
-LIBRARY = -lm #-lefence #-lmpr 
-PROGRAM = codvector 
-MAIN	= main.c 
-MAIN_OBJ = main.o
+CUDA_INSTALL_PATH ?= /usr/local/cuda
+
+#LD = `$LD_LIBRARY_PATH | awk '{print substr($1,2)}'`
+
+CXX := g++ 
+CC := gcc 
+LINK := g++ -fPIC 
+NVCC  := nvcc --compiler-options -fno-strict-aliasing -O3
+
+# Includes
+INCLUDES = -I. -I$(CUDA_INSTALL_PATH)/include
+
+# Common flags
+COMMONFLAGS += $(INCLUDES)
+NVCCFLAGS += $(COMMONFLAGS)
+CXXFLAGS += $(COMMONFLAGS)
+CFLAGS += $(COMMONFLAGS)
+
 SOURCES1 = params.c
 OBJECTS1 = params.o
 
 
+
+
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+#LIB_CUDA := -L$(LD) -lcudart
+
+
+OBJS = main.cu.o
+TARGET = codvector
+LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(OBJECTS1) $(LIB_CUDA)
+
+.SUFFIXES: .c .cu .o
+
 params:	$(OBJECTS1)
 	$(CC) -c ${SOURCES1}
 
-std:	$(MAIN_OBJ) 
-	$(CC) $(CFLAGS) $(MAIN_OBJ) $(OBJECTS1) -o $(PROGRAM) $(LIBRARY)
+%.c.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-all:	$(MAIN_OBJ)
-	$(CC) $(CFLAGS) $(MAIN_OBJ) $(OBJECTS1) -o $(PROGRAM) $(LIBRARY)
+%.cu.o: %.cu
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
-clean-all:
-	rm -f $(MAIN_OBJ) $(PROGRAM) *~ *.o
+$(TARGET): $(OBJS) Makefile
+	$(LINKLINE)
 
-cleano:
-	rm -f *~ *.o #$(MAIN_OBJ)
+clean:
+	rm -f $(BIN) *.o *.cu_o ${TARGET}
 
 docs: Doxyfile
 	doxygen Doxyfile
-lint:
-	lint  $(MAIN) $(SOURCES1)
+
+indent:
+	indent -bad -bap -bbb -br -bli1 -brf -brf -bs -ce -cdw -cs -i8 -l160 -lc160 -nsob -npsl -sc *.c *.cu
+
 

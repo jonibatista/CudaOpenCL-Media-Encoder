@@ -9,9 +9,9 @@ rm _Codificador/*.coded >/dev/null 2>&1
 clear
 echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
-make clean-all
+make clean
 make params
-make all
+make codvector
 
 
 # Run codvector
