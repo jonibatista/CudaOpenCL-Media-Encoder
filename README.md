@@ -34,13 +34,13 @@ Utilização
 *medium* - codifica a de tamanho médio
 
 
-
+<!--
 #Alterações Codificador
-#----------
+#--------
 #	int **Image_orig;
 #	int **Image_out;
 #	int ysize[1], xsize[1];           /* The dimensions of the original image */
 #
 #Eram globais e não havia necessidade
 #
-#	void start_outputting_bits(); // removeu-se esta função desnecessária
+#	void start_outputting_bits(); // removeu-se esta função desnecessária-->
