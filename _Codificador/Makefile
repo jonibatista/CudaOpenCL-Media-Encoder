@@ -25,8 +25,6 @@ OBJECTS1 = params.o
 #space:= $(empty) $(empty)
 #foo:= a b c
 #bar:= $(subst $(space),$(comma),$(foo))
-
-<<<<<<< HEAD
 #empty:=a
 #comma:=/
 #foo:=$(LD_LIBRARY_PATH)
