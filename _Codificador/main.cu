@@ -130,7 +130,7 @@ unsigned char **ucmatrix (int nrl, int nrh, int ncl, int nch);
 void output_bit (int bit, FILE * output_file, int *buffer, int *bits_to_go,
 		 long *bits_count);
 void done_outputing_bits (FILE * output_file, int *buffer, int *bits_to_go);
-
+int maxNumberOfThreads ();
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -380,6 +380,19 @@ main (int argc, char *argv[])
   free (G_dic);
 
   return EXIT_SUCCESS;
+}
+
+/**
+ * <p> Gets the max number of threads for this device </p>
+ *
+ * @return max number of threads for this device
+ */
+int
+maxNumberOfThreads ()
+{
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties (&prop, 0);
+  return prop.maxThreadsPerBlock;
 }
 
 
