@@ -13,6 +13,10 @@ Neste projeto pretende-se adaptar uma implementação do algoritmo Vector Quanti
 tar sobre a forma de código fonte C) C)(Vector Quantization) ao paradigma de programação manycore
 computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 
+Requirements
+-------------
+	apt-get install doxygen tree gengetopt
+
 Instalação
 ----------
 	./configure
@@ -31,12 +35,12 @@ Utilização
 
 
 
-Alterações Codificador
-----------
-	int **Image_orig;
-	int **Image_out;
-	int ysize[1], xsize[1];           /* The dimensions of the original image */
-
-Eram globais e não havia necessidade
-
-	void start_outputting_bits(); // removeu-se esta função desnecessária
+#Alterações Codificador
+#----------
+#	int **Image_orig;
+#	int **Image_out;
+#	int ysize[1], xsize[1];           /* The dimensions of the original image */
+#
+#Eram globais e não havia necessidade
+#
+#	void start_outputting_bits(); // removeu-se esta função desnecessária

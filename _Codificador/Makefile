@@ -20,11 +20,38 @@ SOURCES1 = params.c
 OBJECTS1 = params.o
 
 
+#comma:= ,
 
+#space:= $(empty) $(empty)
+#foo:= a b c
+#bar:= $(subst $(space),$(comma),$(foo))
 
+#empty:=a
+#comma:=/
+#foo:=$(LD_LIBRARY_PATH)
+#bar:=$(subst "/","o","ola/ola/aa")
+
+#LL := $($(LD_LIBRARY_PATH) | sed 's/^..//') #$($(LD_LIBRARY_PATH) | sed 's/^..//') #
+#LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
-#LIB_CUDA := -L$(LD) -lcudart
 
+PROC = `uname -m`
+PROC64 = "x86_64"
+PROC32 = "i686"
+
+file:
+	ifeq "$(PROC)" "$(PROC64)"
+		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+		@echo " Strings are equal."
+	else
+		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+		@echo " Strings differ."
+	endif
+
+
+all:
+	@echo "$(PROC)" "$(PROC64)"
+	@echo "$(LIB_CUDA)"
 
 OBJS = main.cu.o
 TARGET = codvector
