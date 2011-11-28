@@ -451,7 +451,7 @@ main (int argc, char *argv[])
     {
       for (j = 0; j < (xsize / block_size_x); j++)
 	{
-	  write_index (v_pgm_coded2[i * (xsize / block_size_x) + j],
+	  write_index (v_pgm_coded[i * (xsize / block_size_x) + j],
 		       bits_index, &bits_count, &bits_to_go, &buffer,
 		       pointf_out);
 	}
@@ -1116,7 +1116,7 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
   int pointfo;
   char header_pgm[20];
   int npixel_orig, nline_orig;
-	ssize_t bytes_written;
+	//ssize_t bytes_written;
 
   npixel_orig = npixel;
   nline_orig = nline;
@@ -1176,7 +1176,13 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
   *(header_pgm + i) = '\n';
   i++;
 
-  bytes_written=write (pointfo, (char *) header_pgm, i);
+ if (write (pointfo, (char *) header_pgm, i) == -1 ) {
+	printf ("something went wrong");
+}
+
+
+
+
 
   unsigned char **image_tmp;
   int j;
@@ -1187,7 +1193,9 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
       image_tmp[i][j] = (unsigned char) im_matrix[i][j];
 
   for (i = 0; i < (nline_orig); i++) {
-    bytes_written=write (pointfo, image_tmp[i], npixel_orig);
+    if (write (pointfo, image_tmp[i], npixel_orig)==-1){
+	printf ("something went wrong on %d",i);
+}
 }
   close (pointfo);		/* closes file */
 }

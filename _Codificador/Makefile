@@ -32,7 +32,7 @@ OBJECTS1 = params.o
 
 #LL := $($(LD_LIBRARY_PATH) | sed 's/^..//') #$($(LD_LIBRARY_PATH) | sed 's/^..//') #
 #LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 
 PROC = `uname -m`
 PROC64 = "x86_64"
