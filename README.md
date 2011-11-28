@@ -17,21 +17,25 @@ Requirements
 -------------
 	apt-get install doxygen tree gengetopt
 
-Instalação
+Install
 ----------
 	./configure
 
 
-Utilização
+Usage
 ----------
 	./run *TIPO_DE_IMAGEM*
 
 #### Tipos de imagem	
-*all* - codifica todas as imagens
 
 *small* - codifica a mais pequena
 
 *medium* - codifica a de tamanho médio
+
+*large* - codifica a de tamanho grande
+
+*all* - codifica todas as imagens
+
 
 
 <!--
