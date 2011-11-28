@@ -1,4 +1,17 @@
 #!/bin/bash
 
+
+echo -e "\nConfiguring ...";
+#rm -f -r documentation/ !(cuda.jpg)
+
+
+echo "\nUpdating tree.out ...";
+# Create tree output
+tree -o tree.out #>/dev/null 2>&1
+
+echo "\nGenerating documentation ...";
 cd _Codificador/
-make docs
+make docs >/dev/null 2>&1
+
+
+echo "\nDone.\n";

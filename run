@@ -36,8 +36,3 @@ rm -r Coded
 rm _Codificador/*.coded >/dev/null 2>&1
 
 
-
-# Create tree output
-tree -o tree.out
-
-
