@@ -270,6 +270,7 @@ main(int argc, char *argv[]) {
     v_pgm_sorted = int_vector(ysize, xsize);
     sort_pgm_blocks(v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize, ysize);
 
+    // calculate the quad error. (this will be executed on GPU)
     int count = 0;
     for (i = 0; i < ysize * xsize; i += (block_size_y * block_size_x)) {
         for (j = 0; j < block_size_y * block_size_x; j++) {
@@ -291,6 +292,7 @@ main(int argc, char *argv[]) {
 
     }
 
+    // change this to vector to! future work
     for (i = 0; i < ysize; i += block_size_y) {
         for (j = 0; j < xsize; j += block_size_x) {
             for (i1 = 0; i1 < block_size_y; i1++) {
