@@ -5,7 +5,7 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 CXX := g++ 
 CC := gcc 
 LINK := g++ -fPIC 
-NVCC  := nvcc --compiler-options -fno-strict-aliasing -O3
+NVCC  := nvcc --compiler-options -fno-strict-aliasing -O3 -arch sm_20
 
 # Includes
 INCLUDES = -I. -I$(CUDA_INSTALL_PATH)/include
