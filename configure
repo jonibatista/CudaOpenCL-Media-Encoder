@@ -1,13 +1,23 @@
 #!/bin/bash
 
+DOC_IMAGE="cuda.jpg"
 
 echo -e "\nConfiguring ...";
-#rm -f -r documentation/ !(cuda.jpg)
 
+src="documentation/"
+    
+for dir in `ls "$src/"`
+do
+  if [ -d "$src/$dir" ]; then
+    #uh oh - $dir will never match paths with spaces
+    echo $src/$dir;
+    rm -r $src/$dir;
+  fi
+done
 
 echo "\nUpdating tree.out ...";
 # Create tree output
-tree -o tree.out #>/dev/null 2>&1
+tree -o documentation/tree.out #>/dev/null 2>&1
 
 echo "\nGenerating documentation ...";
 cd _Codificador/
