@@ -32,7 +32,7 @@ make cleano >/dev/null 2>&1
 
 # Clean coded data
 cd ..
-rm -r Coded
-rm _Codificador/*.coded >/dev/null 2>&1
+#rm -r Coded
+#rm _Codificador/*.coded >/dev/null 2>&1
 
 
