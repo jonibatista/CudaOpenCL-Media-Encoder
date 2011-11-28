@@ -64,7 +64,6 @@
 #define RANGEY      	 255	// Range level of luminance
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
-
 /**
  * <p> Function to process CUDA errors </p>
  *
@@ -95,11 +94,45 @@ HandleError(cudaError_t err, const char *file, int line) {
  * @return on error, the calling process is terminated
  **/
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
+const int G_ThreadsPerBlock = 512;//MAX_T;;
+const int G_BlocksPerGrid = 65535;//
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                             CUDA KERNEL                                  ///
 ////////////////////////////////////////////////////////////////////////////////
+__global__ void encoding_pgm(int num_codewords, int block_x, int block_y, int *dev_dict, int *dev_pgm, int *dev_pgm_coded){
+       __shared__ float cache[G_ThreadsPerBlock];
 
+       int i;
+       int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+       int cache_index = threadIdx.x;
+       float temp = 0.0;
+
+       while(tid < num_codewords){
+               i =0; 
+               int idx_dict = threadIdx.x*block_x*block_y;
+               int idx_block = 0;
+               while (i < (block_x * block_y)){
+                       idx_block = (blockIdx.x * blockDim.x) + i;
+                       temp += ((dev_dict[idx_dict+i]-dev_pgm[idx_block])*(dev_dict[idx_dict+i]-dev_pgm[idx_block]));
+                       i++;
+               //__syncthreads();
+               }
+               cache[cache_index]=temp;
+               __syncthreads();
+       }
+
+       if(threadIdx.x == 0) {
+               float aux = FLT_MAX;
+
+               for (i = 0;i<blockDim.x;i++){
+                       if(cache[i]<aux){
+                               aux = cache[i];
+                               dev_pgm_coded[blockIdx.x] = i;
+                       }
+               }
+       }
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -271,7 +304,7 @@ main(int argc, char *argv[]) {
     sort_pgm_blocks(v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize, ysize);
 
     // calculate the quad error. (this will be executed on GPU)
-    int count = 0;
+    /*int count = 0;
     for (i = 0; i < ysize * xsize; i += (block_size_y * block_size_x)) {
         for (j = 0; j < block_size_y * block_size_x; j++) {
             original_block[j] =
@@ -290,7 +323,33 @@ main(int argc, char *argv[]) {
         v_pgm_coded[count] = index;
         count++;
 
-    }
+    }*/
+
+    
+    // 
+    int *dev_pgm;// = int_vector(ysize, xsize);
+    int *dev_dict;// = int_vector(ysize, xsize);
+    int *dev_pgm_coded;// = int_vector(ysize/block_size_y, xsize/block_size_x);
+    // execute GPU KERNEL
+    HANDLE_ERROR (cudaMalloc ((void **) &dev_pgm, (size_t)(ysize * xsize) * sizeof (int)));
+        HANDLE_ERROR (cudaMalloc ((void **) &dev_dict, (size_t)(ysize * xsize) * sizeof (int)));
+       HANDLE_ERROR (cudaMalloc ((void **) &dev_pgm_coded, G_BlocksPerGrid * sizeof (int)));
+       //dev_result = (int *) malloc((unsigned) (G_BlocksPerGrid) * sizeof (int));
+       HANDLE_ERROR (cudaMemcpy (dev_pgm, v_pgm, (ysize * xsize) * sizeof (int), cudaMemcpyHostToDevice));
+       HANDLE_ERROR (cudaMemcpy (dev_dict, G_dic, num_codewords * block_size_y * block_size_x* sizeof(int), cudaMemcpyHostToDevice));
+      
+       encoding_pgm<<<G_BlocksPerGrid,G_ThreadsPerBlock>>> (num_codewords, block_size_x, block_size_y, dev_dict, dev_pgm, dev_pgm_coded);
+       
+       //v_pgm_coded = (int *) malloc((unsigned) G_BlocksPerGrid * sizeof (int));
+       HANDLE_ERROR(cudaMemcpy(v_pgm_coded, dev_pgm_coded, (G_BlocksPerGrid)*sizeof(int), cudaMemcpyDeviceToHost));
+       printf("-----------------------------------------------------------------------------------------------\n");
+       for(i=0;i<G_BlocksPerGrid;i++){
+               printf("%d", v_pgm_coded[i]);
+       }
+       printf("-----------------------------------------------------------------------------------------------\n");
+
+
+
 
     // change this to vector to! future work
     for (i = 0; i < ysize; i += block_size_y) {
