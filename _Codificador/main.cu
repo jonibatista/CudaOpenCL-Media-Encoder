@@ -514,9 +514,21 @@ load_dictionary(char *file_name, int *num_codewords, int *block_size_x,
         exit(1);
     }
 
-    fscanf(pointf_dic, "%d\n", num_codewords);
-    fscanf(pointf_dic, "%d\n", block_size_x);
-    fscanf(pointf_dic, "%d\n", block_size_y);
+    if (fscanf(pointf_dic, "%d\n", num_codewords) == EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
+    if (fscanf(pointf_dic, "%d\n", block_size_x) == EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
+    if (fscanf(pointf_dic, "%d\n", block_size_y) == EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
     printf("\n-----------------------------------------------------");
     printf("\n Carregou dicionario %s", file_name);
@@ -581,7 +593,11 @@ read_header_pgm(int *ysize, int *xsize, char *file_name) {
         exit(1);
     }
 
-    fscanf(pointf, "%s\n", dummy);
+    if ( fscanf(pointf, "%s\n", dummy) == EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
 
     //*******************************
@@ -600,7 +616,11 @@ read_header_pgm(int *ysize, int *xsize, char *file_name) {
         }
     } while (read == 0);
 
-    fscanf(pointf, " %d %d", xsize, ysize);
+    if (fscanf(pointf, " %d %d", xsize, ysize)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
     //********************************
 
     fclose(pointf); /* closes file */
@@ -631,7 +651,11 @@ read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
         exit(1);
     }
 
-    fscanf(pointf, "%s\n", dummy);
+    if ( fscanf(pointf, "%s\n", dummy)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
     //*******************************
     do {
@@ -649,10 +673,18 @@ read_file_pgm(int **pelimg, int *ysize, int *xsize, char *file_name) {
 
 
 
-    fscanf(pointf, " %d %d", xsize, ysize);
+if (    fscanf(pointf, " %d %d", xsize, ysize)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
     //********************************
 
-    fscanf(pointf, "%d\n", aux);
+    if (fscanf(pointf, "%d\n", aux)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
     for (i = 0; i < *ysize; i++) {
         for (j = 0; j < *xsize; j++) {
@@ -688,7 +720,11 @@ v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name) {
         exit(1);
     }
 
-    fscanf(pointf, "%s\n", dummy);
+    if (fscanf(pointf, "%s\n", dummy)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
     //*******************************
     do {
@@ -706,10 +742,18 @@ v_read_file_pgm(int *pelimg, int *ysize, int *xsize, char *file_name) {
 
 
 
-    fscanf(pointf, " %d %d", xsize, ysize);
+    if (fscanf(pointf, " %d %d", xsize, ysize)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
     //********************************
 
-    fscanf(pointf, "%d\n", aux);
+    if (fscanf(pointf, "%d\n", aux)== EOF)
+    {
+      printf ("\nEOF ERROR\n");
+
+    }
 
     for (i = 0; i < *ysize; i++) {
         for (j = 0; j < *xsize; j++) {
