@@ -21,17 +21,17 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_PACKAGE
 /** @brief the program name (used for printing errors) */
-#define CMDLINE_PARSER_PACKAGE "Encoder"
+#define CMDLINE_PARSER_PACKAGE "Cuda Codifier"
 #endif
 
 #ifndef CMDLINE_PARSER_PACKAGE_NAME
 /** @brief the complete program name (used for help and version) */
-#define CMDLINE_PARSER_PACKAGE_NAME "Encoder"
+#define CMDLINE_PARSER_PACKAGE_NAME "Cuda Codifier"
 #endif
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "v1.0.0"
+#define CMDLINE_PARSER_VERSION "v1.0.1"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -39,21 +39,21 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  char * imagem_arg;	/**< @brief nome da imagem PGM a ser codificada.  */
-  char * imagem_orig;	/**< @brief nome da imagem PGM a ser codificada original value given at command line.  */
-  const char *imagem_help; /**< @brief nome da imagem PGM a ser codificada help description.  */
-  char * dicionario_arg;	/**< @brief nome do dicionario de codificação.  */
-  char * dicionario_orig;	/**< @brief nome do dicionario de codificação original value given at command line.  */
-  const char *dicionario_help; /**< @brief nome do dicionario de codificação help description.  */
-  char * ficheiro_arg;	/**< @brief nome do ficheiro de saída (ficheiro codificado).  */
-  char * ficheiro_orig;	/**< @brief nome do ficheiro de saída (ficheiro codificado) original value given at command line.  */
-  const char *ficheiro_help; /**< @brief nome do ficheiro de saída (ficheiro codificado) help description.  */
+  char * image_arg;	/**< @brief Name of the PGM image to be coded.  */
+  char * image_orig;	/**< @brief Name of the PGM image to be coded original value given at command line.  */
+  const char *image_help; /**< @brief Name of the PGM image to be coded help description.  */
+  char * dictionary_arg;	/**< @brief Name of the codifier dictionary.  */
+  char * dictionary_orig;	/**< @brief Name of the codifier dictionary original value given at command line.  */
+  const char *dictionary_help; /**< @brief Name of the codifier dictionary help description.  */
+  char * file_arg;	/**< @brief Name of the output file.  */
+  char * file_orig;	/**< @brief Name of the output file original value given at command line.  */
+  const char *file_help; /**< @brief Name of the output file help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
-  unsigned int imagem_given ;	/**< @brief Whether imagem was given.  */
-  unsigned int dicionario_given ;	/**< @brief Whether dicionario was given.  */
-  unsigned int ficheiro_given ;	/**< @brief Whether ficheiro was given.  */
+  unsigned int image_given ;	/**< @brief Whether image was given.  */
+  unsigned int dictionary_given ;	/**< @brief Whether dictionary was given.  */
+  unsigned int file_given ;	/**< @brief Whether file was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */

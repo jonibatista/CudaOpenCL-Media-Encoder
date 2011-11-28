@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
 ///   Copyright (C) 2008 by Nelson Carreira Francisco                        ///
 ///   eng.nelsito@gmail.com                                                  ///
 ///                                                                          ///
@@ -245,9 +245,9 @@ main (int argc, char *argv[])
       exit (ERROR_INVALID_PARAMETERS);
     }
 
-  inname = args_info.imagem_arg;
-  dic_name = args_info.dicionario_arg;
-  outname = args_info.ficheiro_arg;
+  inname = args_info.image_arg;
+  dic_name = args_info.dictionary_arg;
+  outname = args_info.file_arg;
 
 
   //Carrega dicionario
@@ -425,7 +425,7 @@ for(i = 0; i<G_BlocksPerGrid; i++){
     {
       for (j = 0; j < (xsize / block_size_x); j++)
 	{
-	  write_index (v_pgm_coded[i * (xsize / block_size_x) + j],
+	  write_index (v_pgm_coded2[i * (xsize / block_size_x) + j],
 		       bits_index, &bits_count, &bits_to_go, &buffer,
 		       pointf_out);
 	}

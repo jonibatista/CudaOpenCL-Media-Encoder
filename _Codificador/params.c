@@ -25,18 +25,18 @@
 
 #include "params.h"
 
-const char *gengetopt_args_info_purpose = "O programa é responsavel por codificar uma imagem usando CUDA";
+const char *gengetopt_args_info_purpose = "Quantization Vector adaptation for manycore computing using NVIDIA CUDA SDK";
 
-const char *gengetopt_args_info_usage = "Usage: Encoder [OPTIONS]... [FILES]...";
+const char *gengetopt_args_info_usage = "Usage: Cuda Codifier [OPTIONS]... [FILES]...";
 
 const char *gengetopt_args_info_description = "";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help               Print help and exit",
   "  -V, --version            Print version and exit",
-  "  -i, --imagem=STRING      nome da imagem PGM a ser codificada",
-  "  -d, --dicionario=STRING  nome do dicionario de codificação",
-  "  -o, --ficheiro=STRING    nome do ficheiro de saída (ficheiro codificado)",
+  "  -i, --image=STRING       Name of the PGM image to be coded",
+  "  -d, --dictionary=STRING  Name of the codifier dictionary",
+  "  -o, --file=STRING        Name of the output file",
     0
 };
 
@@ -88,21 +88,21 @@ void clear_given (struct gengetopt_args_info *args_info)
 {
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
-  args_info->imagem_given = 0 ;
-  args_info->dicionario_given = 0 ;
-  args_info->ficheiro_given = 0 ;
+  args_info->image_given = 0 ;
+  args_info->dictionary_given = 0 ;
+  args_info->file_given = 0 ;
 }
 
 static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
-  args_info->imagem_arg = NULL;
-  args_info->imagem_orig = NULL;
-  args_info->dicionario_arg = NULL;
-  args_info->dicionario_orig = NULL;
-  args_info->ficheiro_arg = NULL;
-  args_info->ficheiro_orig = NULL;
+  args_info->image_arg = NULL;
+  args_info->image_orig = NULL;
+  args_info->dictionary_arg = NULL;
+  args_info->dictionary_orig = NULL;
+  args_info->file_arg = NULL;
+  args_info->file_orig = NULL;
   
 }
 
@@ -113,9 +113,9 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->imagem_help = gengetopt_args_info_help[2] ;
-  args_info->dicionario_help = gengetopt_args_info_help[3] ;
-  args_info->ficheiro_help = gengetopt_args_info_help[4] ;
+  args_info->image_help = gengetopt_args_info_help[2] ;
+  args_info->dictionary_help = gengetopt_args_info_help[3] ;
+  args_info->file_help = gengetopt_args_info_help[4] ;
   
 }
 
@@ -199,12 +199,12 @@ static void
 cmdline_parser_release (struct gengetopt_args_info *args_info)
 {
   unsigned int i;
-  free_string_field (&(args_info->imagem_arg));
-  free_string_field (&(args_info->imagem_orig));
-  free_string_field (&(args_info->dicionario_arg));
-  free_string_field (&(args_info->dicionario_orig));
-  free_string_field (&(args_info->ficheiro_arg));
-  free_string_field (&(args_info->ficheiro_orig));
+  free_string_field (&(args_info->image_arg));
+  free_string_field (&(args_info->image_orig));
+  free_string_field (&(args_info->dictionary_arg));
+  free_string_field (&(args_info->dictionary_orig));
+  free_string_field (&(args_info->file_arg));
+  free_string_field (&(args_info->file_orig));
   
   
   for (i = 0; i < args_info->inputs_num; ++i)
@@ -244,12 +244,12 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
-  if (args_info->imagem_given)
-    write_into_file(outfile, "imagem", args_info->imagem_orig, 0);
-  if (args_info->dicionario_given)
-    write_into_file(outfile, "dicionario", args_info->dicionario_orig, 0);
-  if (args_info->ficheiro_given)
-    write_into_file(outfile, "ficheiro", args_info->ficheiro_orig, 0);
+  if (args_info->image_given)
+    write_into_file(outfile, "image", args_info->image_orig, 0);
+  if (args_info->dictionary_given)
+    write_into_file(outfile, "dictionary", args_info->dictionary_orig, 0);
+  if (args_info->file_given)
+    write_into_file(outfile, "file", args_info->file_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -366,21 +366,21 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   FIX_UNUSED (additional_error);
 
   /* checks for required options */
-  if (! args_info->imagem_given)
+  if (! args_info->image_given)
     {
-      fprintf (stderr, "%s: '--imagem' ('-i') option required%s\n", prog_name, (additional_error ? additional_error : ""));
+      fprintf (stderr, "%s: '--image' ('-i') option required%s\n", prog_name, (additional_error ? additional_error : ""));
       error = 1;
     }
   
-  if (! args_info->dicionario_given)
+  if (! args_info->dictionary_given)
     {
-      fprintf (stderr, "%s: '--dicionario' ('-d') option required%s\n", prog_name, (additional_error ? additional_error : ""));
+      fprintf (stderr, "%s: '--dictionary' ('-d') option required%s\n", prog_name, (additional_error ? additional_error : ""));
       error = 1;
     }
   
-  if (! args_info->ficheiro_given)
+  if (! args_info->file_given)
     {
-      fprintf (stderr, "%s: '--ficheiro' ('-o') option required%s\n", prog_name, (additional_error ? additional_error : ""));
+      fprintf (stderr, "%s: '--file' ('-o') option required%s\n", prog_name, (additional_error ? additional_error : ""));
       error = 1;
     }
   
@@ -528,9 +528,9 @@ cmdline_parser_internal (
       static struct option long_options[] = {
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
-        { "imagem",	1, NULL, 'i' },
-        { "dicionario",	1, NULL, 'd' },
-        { "ficheiro",	1, NULL, 'o' },
+        { "image",	1, NULL, 'i' },
+        { "dictionary",	1, NULL, 'd' },
+        { "file",	1, NULL, 'o' },
         { 0,  0, 0, 0 }
       };
 
@@ -550,38 +550,38 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'i':	/* nome da imagem PGM a ser codificada.  */
+        case 'i':	/* Name of the PGM image to be coded.  */
         
         
-          if (update_arg( (void *)&(args_info->imagem_arg), 
-               &(args_info->imagem_orig), &(args_info->imagem_given),
-              &(local_args_info.imagem_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->image_arg), 
+               &(args_info->image_orig), &(args_info->image_given),
+              &(local_args_info.image_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "imagem", 'i',
+              "image", 'i',
               additional_error))
             goto failure;
         
           break;
-        case 'd':	/* nome do dicionario de codificação.  */
+        case 'd':	/* Name of the codifier dictionary.  */
         
         
-          if (update_arg( (void *)&(args_info->dicionario_arg), 
-               &(args_info->dicionario_orig), &(args_info->dicionario_given),
-              &(local_args_info.dicionario_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->dictionary_arg), 
+               &(args_info->dictionary_orig), &(args_info->dictionary_given),
+              &(local_args_info.dictionary_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "dicionario", 'd',
+              "dictionary", 'd',
               additional_error))
             goto failure;
         
           break;
-        case 'o':	/* nome do ficheiro de saída (ficheiro codificado).  */
+        case 'o':	/* Name of the output file.  */
         
         
-          if (update_arg( (void *)&(args_info->ficheiro_arg), 
-               &(args_info->ficheiro_orig), &(args_info->ficheiro_given),
-              &(local_args_info.ficheiro_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->file_arg), 
+               &(args_info->file_orig), &(args_info->file_given),
+              &(local_args_info.file_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "ficheiro", 'o',
+              "file", 'o',
               additional_error))
             goto failure;
         
