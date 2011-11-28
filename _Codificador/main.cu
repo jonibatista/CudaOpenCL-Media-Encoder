@@ -94,7 +94,7 @@ HandleError(cudaError_t err, const char *file, int line) {
  * @return on error, the calling process is terminated
  **/
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
-const int G_ThreadsPerBlock = 512; //MAX_T;;
+const int G_ThreadsPerBlock = 1024; //MAX_T;;
 const int G_BlocksPerGrid = 65536; //
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +144,7 @@ __global__ void encoding_pgm(int num_codewords, int pgm_block_size,int *dev_dict
                                dev_pgm_coded[blockIdx.x] = i;
                        }
                }
+               printf(" %d=>%d ", blockIdx.x, dev_pgm_coded[blockIdx.x]);
        }
 }
 
@@ -378,7 +379,9 @@ main(int argc, char *argv[]) {
     cudaFree(dev_pgm_coded); dev_pgm_coded = NULL;
      
 for(i = 0; i<G_BlocksPerGrid; i++){
-     printf("%d=%d", v_pgm_coded2[i], v_pgm_coded2[i]);
+     printf("%d=%d\t", v_pgm_coded2[i], v_pgm_coded[i]);
+     if(i%16 == 0)
+       printf("\n");
 }
 
 
