@@ -9,19 +9,17 @@ src="documentation/"
 for dir in `ls "$src/"`
 do
   if [ -d "$src/$dir" ]; then
-    #uh oh - $dir will never match paths with spaces
-    echo $src/$dir;
     rm -r $src/$dir;
   fi
 done
 
-echo "\nUpdating tree.out ...";
+echo -e "Updating tree.out ...";
 # Create tree output
 tree -o documentation/tree.out #>/dev/null 2>&1
 
-echo "\nGenerating documentation ...";
+echo -e "Generating documentation ...";
 cd _Codificador/
 make docs >/dev/null 2>&1
 
 
-echo "\nDone.\n";
+echo -e "\nDone.\n";
