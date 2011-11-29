@@ -15,7 +15,7 @@ computing, nomeadamente ao CUDA (etapa 1) e ao OpenCL (etapa 2).
 
 Requirements
 -------------
-	apt-get install doxygen tree gengetopt
+	apt-get install doxygen tree gengetopt graphviz
 
 Install
 ----------
@@ -35,16 +35,3 @@ Usage
 *large* - codifica a de tamanho grande
 
 *all* - codifica todas as imagens
-
-
-
-<!--
-#Alterações Codificador
-#--------
-#	int **Image_orig;
-#	int **Image_out;
-#	int ysize[1], xsize[1];           /* The dimensions of the original image */
-#
-#Eram globais e não havia necessidade
-#
-#	void start_outputting_bits(); // removeu-se esta função desnecessária-->

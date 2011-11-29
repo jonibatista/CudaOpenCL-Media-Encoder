@@ -1,4 +1,4 @@
-	////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ///   Copyright (C) 2008 by Nelson Carreira Francisco                        ///
 ///   eng.nelsito@gmail.com                                                  ///
 ///                                                                          ///
@@ -198,7 +198,6 @@ void done_outputing_bits (FILE * output_file, int *buffer, int *bits_to_go);
 int max_number_threads ();
 int max_number_blocks ();
 
-
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
 ////////////////////////////////////////////////////////////////////////////////
@@ -219,10 +218,9 @@ main (int argc, char *argv[])
 
   int *original_block;
 
-  int i, j, i1, j1, n;
+  int i, j, i1, j1;
   int index = -1;		/* Dummy value -- index is set before its usage */
   int average;
-  float distortion;
   float aux = 0;
   double psnr, mse;
 
@@ -342,39 +340,50 @@ main (int argc, char *argv[])
     }
 
 
-    fprintf(pointf_out, "%d\n", xsize);
-    fprintf(pointf_out, "%d\n", ysize);
-    fprintf(pointf_out, "%d\n", average);
+  fprintf (pointf_out, "%d\n", xsize);
+  fprintf (pointf_out, "%d\n", ysize);
+  fprintf (pointf_out, "%d\n", average);
 
-    // sort the pixels of the each block
-    v_pgm_sorted = int_vector(ysize, xsize);
-    sort_pgm_blocks(v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize, ysize);
+  // sort the pixels of the each block
+  v_pgm_sorted = int_vector (ysize, xsize);
+  sort_pgm_blocks (v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize,
+		   ysize);
 
-    int *v_pgm_coded2;
-    v_pgm_coded2 = int_vector(ysize / block_size_y, xsize / block_size_x);
+//
+// calculate the quad error in the cpu
+//
 
-    // calculate the quad error. (this will be executed on GPU)
-    for (i = 0; i < ysize * xsize; i += (block_size)) {
-        for (j = 0; j < block_size; j++) {
-            original_block[j] =
-                    v_pgm_sorted[i + j];
-        }
-        distortion = FLT_MAX;
-        for (n = 0; n < num_codewords; n++) { //Varre todos os elementos do codebook
-            aux =
-                    quad_err(n, block_size, original_block);
-            if (aux < distortion) {
-                index = n;
-                distortion = aux;
-            }
-        }
+/*
+  float distortion = 0.0;
+  
+  int *v_pgm_coded2;
+  v_pgm_coded2 = int_vector (ysize / block_size_y, xsize / block_size_x);
 
-        v_pgm_coded2[i/(block_size)] = index;
-    }  
+  // calculate the quad error. (this will be executed on GPU)
+  for (i = 0; i < ysize * xsize; i += (block_size))
+    {
+      for (j = 0; j < block_size; j++)
+	{
+	  original_block[j] = v_pgm_sorted[i + j];
+	}
+      distortion = FLT_MAX;
+      for (int n = 0; n < num_codewords; n++)
+	{			//Varre todos os elementos do codebook
+	  aux = quad_err (n, block_size, original_block);
+	  if (aux < distortion)
+	    {
+	      index = n;
+	      distortion = aux;
+	    }
+	}
 
-    
+      v_pgm_coded2[i / (block_size)] = index;
+    }
+*/
 
-    //
+
+ 
+  //
     // CUDA STUFF
     // calculate all quad error and create the pgm encoded
     //
@@ -385,7 +394,7 @@ main (int argc, char *argv[])
     int *dev_pgm_coded;
 
 
-// the temporary vecotr of one parte of the image. 
+// the temporary vecotr of one parte of the image.
 // because the number of GPU blocks could be lesse than the number of image blocks
    int *v_pgm_temp, *v_pgm_coded_temp;
    
@@ -410,9 +419,9 @@ main (int argc, char *argv[])
     // alloc memory to cuda vectors
     HANDLE_ERROR(cudaMalloc((void **) &dev_pgm, (size_t) G_BlocksPerGrid * block_size * sizeof (int)));
     HANDLE_ERROR(cudaMalloc((void **) &dev_dict, (size_t) block_size * num_codewords * sizeof (int)));
-    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm_coded, (size_t)  G_BlocksPerGrid * sizeof (int)));
+    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm_coded, (size_t) G_BlocksPerGrid * sizeof (int)));
 
-    // when the image pgm number of blocks is more than GPU blocks we need to call the kernel mothe than once... 
+    // when the image pgm number of blocks is more than GPU blocks we need to call the kernel mothe than once...
     for(i = 0; i < G_BlocksPerGrid * block_size * num_gpu_calls; i+=(G_BlocksPerGrid * block_size)){
 
     // copy the images blocks to temp...
@@ -420,7 +429,7 @@ main (int argc, char *argv[])
         v_pgm_temp[j1] = v_pgm[i1];
     
     // copy the vectors data fom host to gpu device
-    HANDLE_ERROR(cudaMemcpy(dev_pgm, v_pgm_temp,  G_BlocksPerGrid * block_size * sizeof (int), cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(dev_pgm, v_pgm_temp, G_BlocksPerGrid * block_size * sizeof (int), cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(dev_dict, G_dic, num_codewords * block_size * sizeof (int), cudaMemcpyHostToDevice));
 
     // execute GPU KERNEL
@@ -439,17 +448,22 @@ main (int argc, char *argv[])
     cudaFree(dev_pgm); dev_pgm = NULL;
     cudaFree(dev_dict); dev_dict = NULL;
     cudaFree(dev_pgm_coded); dev_pgm_coded = NULL;
-   
+    free(v_pgm_temp); v_pgm_temp = NULL;
+    free(v_pgm_coded_temp); v_pgm_coded_temp = NULL;
+
     //
-   // END OF CUDA STUFF  
+   // END OF CUDA STUFF
 //
 
+
+
 // compare gpu encoded with cpu encoded
-for(i = 0; i<max_number_blocks(); i++){
-     printf("%d=%d\t", v_pgm_coded2[i], v_pgm_coded[i]);
-     if(i%8 == 0)
-       printf("\n");
-}
+ /* for (i = 0; i < max_number_blocks (); i++)
+    {
+      printf ("%d=%d\t", v_pgm_coded2[i], v_pgm_coded[i]);
+      if (i % 8 == 0)
+	printf ("\n");
+    }*/
 
 
   // verificar esta código... 
@@ -474,7 +488,7 @@ for(i = 0; i<max_number_blocks(); i++){
     {
       for (j = 0; j < (xsize / block_size_x); j++)
 	{
-	  write_index (v_pgm_coded2[i * (xsize / block_size_x) + j],
+	  write_index (v_pgm_coded[i * (xsize / block_size_x) + j],
 		       bits_index, &bits_count, &bits_to_go, &buffer,
 		       pointf_out);
 	}
@@ -1154,7 +1168,7 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
   int pointfo;
   char header_pgm[20];
   int npixel_orig, nline_orig;
-	//ssize_t bytes_written;
+  //ssize_t bytes_written;
 
   npixel_orig = npixel;
   nline_orig = nline;
@@ -1214,9 +1228,10 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
   *(header_pgm + i) = '\n';
   i++;
 
- if (write (pointfo, (char *) header_pgm, i) == -1 ) {
-	printf ("something went wrong");
-}
+  if (write (pointfo, (char *) header_pgm, i) == -1)
+    {
+      printf ("something went wrong");
+    }
 
 
 
@@ -1230,11 +1245,13 @@ write_f_pgm (int **im_matrix, int nline, int npixel, char *filename)
     for (j = 0; j < npixel; j++)
       image_tmp[i][j] = (unsigned char) im_matrix[i][j];
 
-  for (i = 0; i < (nline_orig); i++) {
-    if (write (pointfo, image_tmp[i], npixel_orig)==-1){
-	printf ("something went wrong on %d",i);
-}
-}
+  for (i = 0; i < (nline_orig); i++)
+    {
+      if (write (pointfo, image_tmp[i], npixel_orig) == -1)
+	{
+	  printf ("something went wrong on %d", i);
+	}
+    }
   close (pointfo);		/* closes file */
 }
 
