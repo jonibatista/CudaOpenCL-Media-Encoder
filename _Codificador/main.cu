@@ -141,7 +141,7 @@ __syncthreads();
                int idx_block = 0;
 
                while (i < pgm_block_size){
-                       idx_block = (blockIdx.x * blockDim.x) + i;
+                       idx_block = (blockIdx.x * pgm_block_size) + i;
                        temp += ((dev_dict[idx_dict + i]-dev_pgm[idx_block])*(dev_dict[idx_dict+i]-dev_pgm[idx_block]));
                        i++;
                }
@@ -430,7 +430,7 @@ main (int argc, char *argv[])
     HANDLE_ERROR(cudaMemcpy(v_pgm_coded_temp, dev_pgm_coded, (G_BlocksPerGrid) * sizeof (int), cudaMemcpyDeviceToHost));
     
     //add the short vector result to final vector result
-    for(i1 = 0; i < G_BlocksPerGrid; i++)
+    for(i1 = 0; i1 < G_BlocksPerGrid; i1++)
         v_pgm_coded[(G_BlocksPerGrid * i) + i1] = v_pgm_coded_temp[i1];
 
     }

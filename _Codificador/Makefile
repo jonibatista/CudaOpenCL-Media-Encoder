@@ -19,7 +19,7 @@ CFLAGS += $(COMMONFLAGS)
 SOURCES1 = params.c
 OBJECTS1 = params.o
 
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
 
 PROC = `uname -m`
 PROC64 = "x86_64"
