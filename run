@@ -11,6 +11,7 @@ echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
 make clean
 make params
+make gengetopt
 make codvector
 
 
@@ -18,12 +19,12 @@ make codvector
 echo -e "\n############### RUN Codvector ################\n"
 sh codvector.sh $1
 
-echo -e "\n\n############################################################"
+echo "\n\n############################################################"
 echo "################## OUTPUT match verifier ###################"
 echo "############################################################"
 cd ../OutputVerifier/
 sh verifier.sh $1
-echo -e "############################################################\n"
+echo "############################################################\n"
 
 
 # Clean .o files
