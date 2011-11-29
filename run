@@ -11,7 +11,7 @@ echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
 make clean
 make params
-make gengetopt
+#make gengetopt
 make codvector
 
 
