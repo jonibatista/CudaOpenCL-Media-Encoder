@@ -27,7 +27,7 @@ PROC32 = "i686"
 
 file:
 	ifeq "$(PROC)" "$(PROC64)"
-		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
+		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
 		@echo " Strings are equal."
 	else
 		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart

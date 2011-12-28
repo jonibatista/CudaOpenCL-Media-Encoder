@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Clean coded data
-rm -r Coded >/dev/null 2>&1
-mkdir Coded
-rm _Codificador/*.coded >/dev/null 2>&1
+#rm -r Coded >/dev/null 2>&1
+#mkdir Coded
+#rm _Codificador/*.coded >/dev/null 2>&1
 
 # MAKE codificador
 clear

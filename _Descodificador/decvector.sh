@@ -7,8 +7,8 @@ CodedDir=../Coded
 Files_L="
 Informatica_e_no_IPL---cartaz
 ILikeEI
-testPatterns_1024
-"
+testPatterns_1024"
+
 
 DictFName=dic_1024_4x4
 #DictFName=dic_1024_2x2
