@@ -98,9 +98,9 @@ HandleError (cudaError_t err, const char *file, int line)
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
 
 //const int G_ThreadsPerBlock = 512;    //MAX_T;;
-const int G_BlocksPerGrid = 65536;
+const int G_BlocksPerGrid = 4096;
 
-const int G_ThreadsPerBlock = 1024;	//MAX_T;;
+const int G_ThreadsPerBlock = 128;	//MAX_T;;
 
 
 
@@ -124,6 +124,7 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
 
   int i;
   int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+  int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
   int cache_index = threadIdx.x;
   float temp = 0.0;
 
@@ -148,7 +149,8 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
 
       while (i < pgm_block_size)
 	{
-__syncthreads();	 
+  
+ __syncthreads();	 
  idx_block = (blockIdx.x * pgm_block_size) + i;
 	  temp +=
 	    ((dev_dict[idx_dict + i] -
@@ -166,7 +168,7 @@ if (cache[cache_index] > temp)
 	  cache_idx[cache_index] = idx_dict;
 	}
       __syncthreads ();
-      tid += G_ThreadsPerBlock;
+      tid += jump; 
     }
 
 
@@ -501,7 +503,7 @@ int it_gpu_results;
       
       // execute GPU KERNEL
       encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> >(num_codewords, block_size, dev_dict, dev_pgm, dev_pgm_coded);
-
+	
       // copy the vector with the pgm coded from dpu decive to host
       HANDLE_ERROR (cudaMemcpy(v_pgm_coded_temp, dev_pgm_coded,(G_BlocksPerGrid) * sizeof (int),cudaMemcpyDeviceToHost));
 
