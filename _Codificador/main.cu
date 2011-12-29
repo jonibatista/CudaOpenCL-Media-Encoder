@@ -190,6 +190,8 @@ if (cache[cache_index] > temp)
 	}
 //               printf(" %d=>%d ", blockIdx.x, dev_pgm_coded[blockIdx.x]);
     }
+
+__syncthreads();
 }
 
 
@@ -562,7 +564,7 @@ int it_gpu_results;
       HANDLE_ERROR (cudaMemcpy(dev_pgm, v_pgm_temp, G_BlocksPerGrid * block_size * sizeof (int),cudaMemcpyHostToDevice));
       
       // execute GPU KERNEL
-      encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> >(num_codewords, block_size, dev_dict, dev_pgm, dev_pgm_coded);
+      encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock, 0 >> >(num_codewords, block_size, dev_dict, dev_pgm, dev_pgm_coded);
 	
       // copy the vector with the pgm coded from dpu decive to host
       HANDLE_ERROR (cudaMemcpy(v_pgm_coded_temp, dev_pgm_coded,(G_BlocksPerGrid) * sizeof (int),cudaMemcpyDeviceToHost));
