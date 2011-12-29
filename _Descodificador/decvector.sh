@@ -1,14 +1,22 @@
 #!/bin/bash
 
-InputDir_PGM=../Examples---PGM
+InputDir_PGM=../Images
 DictsDir=../Dicts
 CodedDir=../Coded
 
-Files_L="
-Informatica_e_no_IPL---cartaz
-ILikeEI
-testPatterns_1024
-"
+if [ "$1" = "small" ]; then
+	#echo "small"
+	Files_L="testPatterns_1024"
+elif [ "$1" = "medium" ]; then
+	#echo "medium"
+	Files_L="ILikeEI"
+else 
+	#echo "no params";
+	Files_L="Informatica_e_no_IPL---cartaz
+	ILikeEI
+	testPatterns_1024"
+fi
+
 
 DictFName=dic_1024_4x4
 #DictFName=dic_1024_2x2
