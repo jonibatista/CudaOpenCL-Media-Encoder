@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Clean coded data
+# Clean coded data and create dirs
 rm -r Coded >/dev/null 2>&1
 mkdir Coded
 rm _Codificador/*.coded >/dev/null 2>&1
+mkdir Decoded >/dev/null 2>&1
 
 # MAKE codificador
 clear
