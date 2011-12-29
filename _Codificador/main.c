@@ -64,38 +64,7 @@
 #define RANGEY      	 255	// Range level of luminance
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
-/**
- * <p> Function to process CUDA errors </p>
- *
- * @param err [IN] CUDA error to process (usually the code returned by the cuda function)
- * @param line [IN] line of source code where function is called
- * @param file [IN] name of source file where function is called
- * @return on error, the function terminates the process with EXIT_FAILURE code.
- *
- * source: "CUDA by Example: An Introduction to General-Purpose "
- * GPU Programming", Jason Sanders, Edward Kandrot, NVIDIA, July 2010
- * @note: the function should be called through the macro 'HANDLE_ERROR'
- **/
-static void
-HandleError (cudaError_t err, const char *file, int line)
-{
-  if (err != cudaSuccess)
-    {
-      printf ("[ERROR] '%s' (%d) in '%s' at line '%d'\n",
-	      cudaGetErrorString (err), err, file, line);
-      exit (EXIT_FAILURE);
-    }
-}
 
-/**
- * <p>HANDLE_ERROR macro.</p>
- *
- * Wrapping macro for HandleError function (provides "file" and "line" parameters).
- *
- * @param err [IN] CUDA error
- * @return on error, the calling process is terminated
- **/
-#define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
 
 //const int G_ThreadsPerBlock = 512;    //MAX_T;;
 const int G_BlocksPerGrid = 65536;	//
@@ -297,7 +266,8 @@ main (int argc, char *argv[])
 	  original_block[j] = v_pgm_sorted[i + j];
 	}
       distortion = FLT_MAX;
-      for (int n = 0; n < num_codewords; n++)
+      int n;	
+      for (n = 0; n < num_codewords; n++)
 	{			//Varre todos os elementos do codebook
 	  aux = quad_err (n, block_size, original_block);
 	  if (aux < distortion)
@@ -397,33 +367,6 @@ main (int argc, char *argv[])
   G_dic = NULL;
 
   return EXIT_SUCCESS;
-}
-
-/**
- * <p> Gets the max number of threads for this device </p>
- *
- * @return max number of threads for this device
- */
-int
-max_number_threads ()
-{
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties (&prop, 0);
-  return prop.maxThreadsPerBlock;
-}
-
-
-/**
- * <p> Gets the max number of GPU bolcks for this device </p>
- *
- * @return max number of GPU blocks for this device
- */
-int
-max_number_blocks ()
-{
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties (&prop, 0);
-  return prop.maxGridSize[0];
 }
 
 

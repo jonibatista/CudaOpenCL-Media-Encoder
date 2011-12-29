@@ -1,6 +1,6 @@
 CUDA_INSTALL_PATH ?= /usr/local/cuda
 #gcc -W -Wall -I/usr/local/cuda/include $1.cl -o $1.exe -lOpenCL
-CPP := g++ 
+
 CC := gcc 
 
 # Includes
@@ -18,7 +18,7 @@ OBJECTS1 = params.o
 
 OBJS = main.o
 TARGET = codvector
-LINKLINE = $(CPP) -o $(TARGET) $(OBJS) $(OBJECTS1) $(INCLUDES) -lOpenCL
+LINKLINE = $(CC) -o $(TARGET) $(OBJS) $(OBJECTS1) $(INCLUDES) -lOpenCL
 
 .SUFFIXES: .c .o
 
