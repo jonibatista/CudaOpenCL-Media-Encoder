@@ -17,3 +17,5 @@ documentation/html/[^.]*
 documentation/man/[^.]*
 documentation/latex/[^.]*
 documentation/rtf/[^.]*
+documentation/tree.out
+
