@@ -98,7 +98,7 @@ HandleError (cudaError_t err, const char *file, int line)
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
 
 //const int G_ThreadsPerBlock = 512;    //MAX_T;;
-const int G_BlocksPerGrid = 65536;	//
+const int G_BlocksPerGrid = 65536;
 
 const int G_ThreadsPerBlock = 1024;	//MAX_T;;
 
@@ -127,18 +127,20 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
   int cache_index = threadIdx.x;
   float temp = 0.0;
 
-
   if (threadIdx.x == 0)
     {
       for (i = 0; i < G_ThreadsPerBlock; i++)
 	cache[i] = 0.0;
+	cache_idx[i] = 0;
     }
   __syncthreads ();
 
   // make the dictionary stride  
-  while (tid < (G_BlocksPerGrid / pgm_block_size))
-    {
-      i = 0;
+  while (tid < (G_BlocksPerGrid * num_codewords))
+
+   {
+
+  i = 0;
       temp = 0.0;
 
       int idx_dict = threadIdx.x * pgm_block_size;
@@ -146,7 +148,8 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
 
       while (i < pgm_block_size)
 	{
-	  idx_block = (blockIdx.x * pgm_block_size) + i;
+__syncthreads();	 
+ idx_block = (blockIdx.x * pgm_block_size) + i;
 	  temp +=
 	    ((dev_dict[idx_dict + i] -
 	      dev_pgm[idx_block]) * (dev_dict[idx_dict + i] -
@@ -154,7 +157,10 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
 	  i++;
 	}
 
-      if (cache[cache_index] > temp)
+
+      __syncthreads ();
+      
+if (cache[cache_index] > temp)
 	{
 	  cache[cache_index] = temp;
 	  cache_idx[cache_index] = idx_dict;
@@ -163,13 +169,17 @@ __global__ void encoding_pgm (int num_codewords, int pgm_block_size, int *dev_di
       tid += G_ThreadsPerBlock;
     }
 
+
+      __syncthreads ();
+
   if (threadIdx.x == 0)
     {
       float aux = FLT_MAX;
 
       for (i = 0; i < G_ThreadsPerBlock; i++)
 	{
-	  if (cache[i] < aux)
+//	      printf(" %f =>", cache[i]);
+	  if (cache[i] < aux);
 	    {
 	      // printf(" %d ", i);
 	      aux = cache[i];
@@ -365,8 +375,9 @@ main (int argc, char *argv[])
 //
 // calculate the quad error in the cpu
 //
+/*
   float distortion = 0.0;
-  
+
   int *v_pgm_coded2;
   v_pgm_coded2 = int_vector (ysize / block_size_y, xsize / block_size_x);
 
@@ -390,7 +401,7 @@ main (int argc, char *argv[])
 
       v_pgm_coded2[i / (block_size)] = index;
     }
-
+*/
 /*
   // calculate the quad error. (this will be executed on GPU)
   for (i = 0; i < ysize * xsize; i += (block_size))
@@ -475,44 +486,45 @@ int it_gpu_results;
 		 (size_t) G_BlocksPerGrid * sizeof (int)));
 
 
-printf("\nNumero de partições: %d\n", num_gpu_calls);
+  HANDLE_ERROR (cudaMemcpy(dev_dict, G_dic,num_codewords * block_size * sizeof (int),cudaMemcpyHostToDevice));
+
   for (i = 0, it_gpu_results = 0; i < (G_BlocksPerGrid * block_size * num_gpu_calls) + (missing_blocks * block_size);
        i += (G_BlocksPerGrid * block_size), it_gpu_results++)
     {
 
-      // copy the images blocks to temp...
+    // copy the images blocks to temp...
       for (i1 = i, j1 = 0; j1 < num_blocks_grid * block_size; i1++, j1++)
 	v_pgm_temp[j1] = v_pgm_sorted[i1];
-
+      
       // copy the vectors data fom host to gpu device
       HANDLE_ERROR (cudaMemcpy(dev_pgm, v_pgm_temp, G_BlocksPerGrid * block_size * sizeof (int),cudaMemcpyHostToDevice));
-      HANDLE_ERROR (cudaMemcpy(dev_dict, G_dic,num_codewords * block_size * sizeof (int),cudaMemcpyHostToDevice));
-
+      
       // execute GPU KERNEL
       encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> >(num_codewords, block_size, dev_dict, dev_pgm, dev_pgm_coded);
 
       // copy the vector with the pgm coded from dpu decive to host
       HANDLE_ERROR (cudaMemcpy(v_pgm_coded_temp, dev_pgm_coded,(G_BlocksPerGrid) * sizeof (int),cudaMemcpyDeviceToHost));
-      
-//add the short vector result to final vector result
+
+      //add the short vector result to final vector result
       for (i1 = 0; i1 < num_blocks_grid; i1++){
 	v_pgm_coded[(G_BlocksPerGrid * it_gpu_results) + i1] = v_pgm_coded_temp[i1];
-}
+	
+      }  
 
-  if(missing_blocks != 0 && num_gpu_calls == it_gpu_results+1){
-	// there're missing blocks...
+      if(missing_blocks != 0 && num_gpu_calls == it_gpu_results+1){
+      	// there're missing blocks...
         // this time the gpu will use less blocks
         num_blocks_grid = missing_blocks;
-}
-    }
+	}
+   }
 
-
+/*
 for(int x=0; x<(xsize * ysize)/block_size; x++){
 	printf("\n%d = %d =>", v_pgm_coded2[x], v_pgm_coded[x]);
 	if(v_pgm_coded2[x] != v_pgm_coded[x])
                printf("PROBLEM!!!!!!!!!!!!!!!!!!!!");
  }
-
+*/
  
 // cuda free memory
   cudaFree (dev_pgm);
@@ -532,12 +544,10 @@ for(int x=0; x<(xsize * ysize)/block_size; x++){
 
 
 // compare gpu encoded with cpu encoded
-  /* for (i = 0; i < max_number_blocks (); i++)
+  /* for (i = 0; i < i < xsize * ysize / block_size; i++)
      {
-     printf ("%d=%d\t", v_pgm_coded2[i], v_pgm_coded[i]);
-     if (i % 8 == 0)
-     printf ("\n");
-     } */
+     printf ("%d =>", v_pgm_coded[i]);
+     }*/ 
 
 
   // verificar esta código... 
@@ -562,7 +572,7 @@ for(int x=0; x<(xsize * ysize)/block_size; x++){
     {
       for (j = 0; j < (xsize / block_size_x); j++)
 	{
-	  write_index (v_pgm_coded2[i * (xsize / block_size_x) + j],
+	  write_index (v_pgm_coded[i * (xsize / block_size_x) + j],
 		       bits_index, &bits_count, &bits_to_go, &buffer,
 		       pointf_out);
 	}
