@@ -5,6 +5,7 @@ CC := gcc
 
 # Includes
 INCLUDES = -I. -I$(CUDA_INSTALL_PATH)/include
+LIBRARY = -lm  -lOpenCL
 
 # Common flags
 COMMONFLAGS += $(INCLUDES)
@@ -16,23 +17,26 @@ SOURCES1 = params.c
 OBJECTS1 = params.o
 
 
-OBJS = main.o
+OBJS = main.o params.o
 TARGET = codvector
-LINKLINE = $(CC) -o $(TARGET) $(OBJS) $(OBJECTS1) $(INCLUDES) -lOpenCL
+LINKLINE = $(CC) -o $(TARGET) $(OBJS) $(INCLUDES) $(LIBRARY) 
 
-.SUFFIXES: .c .o
 
-params:	params.c
-	gcc -c params.c
+std: $(OBJS) 
+	$(LINKLINE)
+
+
+#.SUFFIXES: .c .o
+
+params.o: params.c
+	gcc -lm -c params.c
 
 %.c.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJS) Makefile
-	$(LINKLINE)
+#$(TARGET): $(OBJS) Makefile
+#	$(LINKLINE)
 
-all: $(OBJS) Makefile
-	$(LINKLINE)
 
 clean:
 	rm -f $(BIN) *.o ${TARGET}
