@@ -38,12 +38,17 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
-#include <CL/cl.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "params.h"
+
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#else
+#include <CL/cl.h>
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +71,10 @@
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
 
 #define MAX_SOURCE_SIZE (0x100000)
+
+#define DATA_SIZE 20
+#define MAX_SOURCE_SIZE (0x100000)
+
 
 //const int G_ThreadsPerBlock = 512;    //MAX_T;;
 const int G_BlocksPerGrid = 65536;	//
@@ -116,6 +125,19 @@ int *G_dic;
 ///                                  FUNCTIONS                               ///
 ////////////////////////////////////////////////////////////////////////////////
 
+void
+checkErr(cl_int err, char * error_description)
+{
+    if (err != CL_SUCCESS) {
+	printf("error: %s ",error_description);
+
+	exit(EXIT_FAILURE);
+    }
+}
+
+
+
+
 int
 main (int argc, char *argv[])
 {
@@ -157,6 +179,112 @@ main (int argc, char *argv[])
 
   FILE *pointf_out;
 
+// OPEN CL
+  cl_context context;
+  cl_context_properties properties[3];
+  cl_kernel kernel;
+  cl_command_queue command_queue;
+  cl_program program;
+  cl_int err;
+  cl_uint num_of_platforms=0;
+  cl_platform_id platform_id;
+  cl_device_id device_id; 
+  cl_uint num_of_devices=0;
+  cl_mem input, output;	
+  size_t global;
+
+  float inputData[DATA_SIZE]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 , 15, 16, 17, 18, 19, 20};
+  float results[DATA_SIZE]={0};
+
+
+// Load the kernel source code into the array source_str
+    FILE *fp;
+    char *source_str;
+    size_t source_size;
+ 
+    fp = fopen("quadratic_kernel.cl", "r");
+    if (!fp) {
+        fprintf(stderr, "Failed to load kernel.\n");
+        exit(EXIT_FAILURE);
+    }
+    source_str = (char*)malloc(MAX_SOURCE_SIZE);
+    source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
+    fclose( fp );
+
+
+
+	// retrieve a list of platforms avaible
+	err = clGetPlatformIDs(1, &platform_id, &num_of_platforms);
+	checkErr(err, "Unable to get platform_id");
+
+
+	// try to get a supported GPU device
+	err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &num_of_devices);
+	checkErr(err, "Unable to get device_id");
+
+
+	// context properties list - must be terminated with 0
+	properties[0]= CL_CONTEXT_PLATFORM;
+	properties[1]= (cl_context_properties) platform_id;
+	properties[2]= 0;
+
+	// create a context with the GPU device
+	context = clCreateContext(properties,1,&device_id,NULL,NULL,&err);
+
+	checkErr(err, "Unable to create a context with GPU device");
+
+	// create command queue using the context and device
+	command_queue = clCreateCommandQueue(context, device_id, 0, &err);
+
+	checkErr(err, "Unable to create command queue");
+
+	// create a program from the kernel source code
+	program = clCreateProgramWithSource(context,1,(const char **) &source_str, NULL, &err);
+
+	checkErr(err, "Unable to create program");
+
+	// compile the program
+	err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+	checkErr(err, "Unable to build program");
+
+
+	// specify which kernel from the program to execute
+	kernel = clCreateKernel(program, "quadratic", &err);
+
+	checkErr(err, "Unable to run kernel");
+
+	// create buffers for the input and ouput
+	input = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * DATA_SIZE, NULL, &err); // NULL
+	checkErr(err, "Unable to create input buffer");
+	output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * DATA_SIZE, NULL, &err); // NULL
+	checkErr(err, "Unable to create output buffer");
+
+	// load data into the input buffer
+	err = clEnqueueWriteBuffer(command_queue, input, CL_TRUE, 0, sizeof(float) * DATA_SIZE, inputData, 0, NULL, NULL);
+
+	checkErr(err, "Unable to load data into the input buffer");	
+
+	// set the argument list for the kernel command
+	clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
+	clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
+	global=DATA_SIZE;
+
+	// enqueue the kernel command for execution
+	clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
+	clFinish(command_queue);
+
+	// copy the results from out of the output buffer
+	clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, sizeof(float) *DATA_SIZE, results, 0, NULL, NULL);
+	
+	// print the results
+	printf("output: ");
+	for(i=0;i<DATA_SIZE; i++)
+	{
+		// printf("%0.0f | ",results[i]);
+		printf("%0.0f * %0.0f = %0.0f\n", inputData[i], inputData[i], results[i]);
+	}
+
+// end openCL
 
 
   // validate parameters
@@ -378,6 +506,20 @@ kernel_execute_quadratic(v_pgm, ysize, xsize, block_size_x, block_size_y);
   v_pgm_sorted = NULL;
   free (G_dic);
   G_dic = NULL;
+
+
+	
+	// cleanup - release OpenCL resources
+	clReleaseMemObject(input);
+	clReleaseMemObject(output);
+	clReleaseProgram(program);
+	clReleaseKernel(kernel);
+	clReleaseCommandQueue(command_queue);
+	clReleaseContext(context);
+
+
+
+
 
   return EXIT_SUCCESS;
 }
