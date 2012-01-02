@@ -1,5 +1,7 @@
-__kernel void quadratic(__global float *input, __global float *output)
-{
-  size_t id = get_global_id(0);
-  output[id] = input[id] * input[id];
+__kernel void kernel_quadratic(__global const int *A, __global const int *B, __global int *C) {
+    // Get the index of the current element to be processed
+    int i = get_global_id(0);
+ 
+    // Do the operation
+    C[i] = A[i] + B[i];
 }
