@@ -70,16 +70,6 @@
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
 
-#define DATA_SIZE 20
-#define MAX_SOURCE_SIZE 1024	//(0x100000)
-
-
-//const int G_ThreadsPerBlock = 512;    //MAX_T;;
-const int G_BlocksPerGrid = 65536;	//
-
-const int G_ThreadsPerBlock = 1024;	//MAX_T;;
-
-const char G_FILENAME_QUADRATIC_CL[] = "quadratic_kernel.cl";
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                           PROTOTYPES DEFINITION                          ///
@@ -118,9 +108,15 @@ int *kernel_execute_quadratic (int *v_pgm, int ysize, int xsize,
 void build_fail_log (cl_program program, cl_device_id device_id);
 void checkErr (cl_int err, char *error_description);
 
+char *get_kernel_source_by_name(const char *file, size_t * kernel_size);
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
 ////////////////////////////////////////////////////////////////////////////////
+const int G_BlocksPerGrid = 65536;	//
+const int G_ThreadsPerBlock = 1024;	//MAX_T;;
+const char G_FILENAME_QUADRATIC_CL[] = "quadratic_kernel.cl";
 int *G_dic;
 
 
@@ -248,7 +244,7 @@ main (int argc, char *argv[])
 	{
 	  v_pgm[i * xsize + j] -= average;
 	}
-    }
+  }
   //-----------------------------------------
 
 
@@ -419,29 +415,19 @@ for(i = 0; i<xsize*ysize/block_size; i++){
 int *
 kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 			  int block_size_y, int num_codewords)
-{
-
-  // Load the kernel source code into the array source_str
-  FILE *fp;
-  char *source_str;
-  size_t source_size;
-  int *v_output = NULL;
+{ 
+    int *v_output = NULL;
+    size_t kernel_size;
+	char* kernel_src;
 
   // create the vector that will contain the coded pgm
   v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
 
-  fp = fopen (G_FILENAME_QUADRATIC_CL, "r");
-  if (!fp)
-    {
-      fprintf (stderr, "Failed to load kernel.\n");
-      exit (1);
-    }
+    // Load the kernel source code into the array source_str
+kernel_src = get_kernel_source_by_name(G_FILENAME_QUADRATIC_CL, &kernel_size);
+	printf("Kernel size: %Zd bytes\n", kernel_size);  
 
-  source_str = (char *) malloc (MAX_SOURCE_SIZE);
-  source_size = fread (source_str, 1, MAX_SOURCE_SIZE, fp);
-  fclose (fp);
-
-  // Get platform and device information
+// Get platform and device information
   cl_platform_id platform_id = NULL;
   cl_device_id device_id = NULL;
   cl_uint ret_num_devices;
@@ -474,9 +460,9 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 
   // Create a program from the kernel source
   cl_program program = clCreateProgramWithSource (context, 1,
-						  (const char **) &source_str,
+						  (const char **) &kernel_src,
 						  (const size_t *)
-						  &source_size, &ret);
+						  &kernel_size, &ret);
   checkErr (ret, "Unable to create program.");
 
 // Build the program
@@ -587,9 +573,9 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 
   ret = clReleaseCommandQueue (command_queue);
   checkErr (ret, "Unable to destory command_queue.");
-
-  ret = clReleaseContext (context);
-  checkErr (ret, "Unable to destory the context.");
+  
+  free(kernel_src);
+  kernel_src = NULL;
 
   return v_output;
 }
@@ -1338,4 +1324,34 @@ checkErr (cl_int err, char *error_description)
 
       exit (EXIT_FAILURE);
     }
+}
+
+/**
+ * Reads a kernel file
+ * @param file the name of the file to read
+ * @param kernel_size the size in bytes
+ * @return a string with the content of the file
+ */
+char 
+*get_kernel_source_by_name(const char *file, size_t * kernel_size) {
+  
+	FILE *fp;
+	char *source_str;
+	int size;
+
+	fp = fopen(file, "r");
+	if (!fp) {
+		fprintf(stderr, "Failed to load kernel.\n");
+		exit(1);
+	}
+
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+	rewind(fp);
+
+	source_str = (char *) malloc(size);
+	*kernel_size = fread(source_str, 1, size, fp);
+
+	fclose(fp);
+	return source_str;
 }

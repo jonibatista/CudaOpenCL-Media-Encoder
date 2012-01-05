@@ -51,5 +51,8 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
   barrier (CLK_GLOBAL_MEM_FENCE);
 
   if (get_local_id (0) == 0)
-    dev_pgm_coded[get_group_id (0)] = -1;
+    dev_pgm_coded[get_group_id (0)] = 1;
+
+
+  barrier (CLK_GLOBAL_MEM_FENCE);
 }
