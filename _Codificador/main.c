@@ -70,10 +70,8 @@
 
 #define Clip1(a)            ((a)>255?255:((a)<0?0:(a)))
 
-#define MAX_SOURCE_SIZE (0x100000)
-
 #define DATA_SIZE 20
-#define MAX_SOURCE_SIZE (0x100000)
+#define MAX_SOURCE_SIZE 1024	//(0x100000)
 
 
 //const int G_ThreadsPerBlock = 512;    //MAX_T;;
@@ -114,7 +112,11 @@ int max_number_threads ();
 int max_number_blocks ();
 
 
-int* kernel_execute_quadratic(int *v_pgm, int ysize, int xsize, int block_size_x, int block_size_y, int num_codewords);
+int *kernel_execute_quadratic (int *v_pgm, int ysize, int xsize,
+			       int block_size_x, int block_size_y,
+			       int num_codewords);
+void build_fail_log (cl_program program, cl_device_id device_id);
+void checkErr (cl_int err, char *error_description);
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
@@ -125,17 +127,6 @@ int *G_dic;
 ////////////////////////////////////////////////////////////////////////////////
 ///                                  FUNCTIONS                               ///
 ////////////////////////////////////////////////////////////////////////////////
-
-void
-checkErr(cl_int err, char * error_description)
-{
-    if (err != CL_SUCCESS) {
-	printf("\nERROR: %s\n",error_description);
-
-	exit(EXIT_FAILURE);
-    }
-}
-
 
 
 
@@ -283,7 +274,7 @@ main (int argc, char *argv[])
 //
 
   float distortion = 0.0;
-  
+
   // calculate the quad error. (this will be executed on GPU)
   for (i = 0; i < ysize * xsize; i += (block_size))
     {
@@ -292,7 +283,7 @@ main (int argc, char *argv[])
 	  original_block[j] = v_pgm_sorted[i + j];
 	}
       distortion = FLT_MAX;
-      int n;	
+      int n;
       for (n = 0; n < num_codewords; n++)
 	{			//Varre todos os elementos do codebook
 	  aux = quad_err (n, block_size, original_block);
@@ -311,11 +302,15 @@ main (int argc, char *argv[])
 // OPENCL STUFF
 //
 
-v_pgm_coded = kernel_execute_quadratic(v_pgm_sorted, ysize, xsize, block_size_x, block_size_y, num_codewords);
+  v_pgm_coded =
+    kernel_execute_quadratic (v_pgm_sorted, ysize, xsize, block_size_x,
+			      block_size_y, num_codewords);
 
+/*
 for(i = 0; i<xsize*ysize/block_size; i++){
 	printf(" %d ", v_pgm_coded[i]);
 }
+*/
 
 //
 // END OPENCL STUFF
@@ -331,7 +326,8 @@ for(i = 0; i<xsize*ysize/block_size; i++){
 	      for (j1 = 0; j1 < block_size_x; j1++)
 		{
 		  image_out[i + i1][j + j1] =
-		    G_dic[v_pgm_coded[i/block_size_x]  * block_size + (i1 * block_size_x + j1)];
+		    G_dic[v_pgm_coded[i / block_size_x] * block_size +
+			  (i1 * block_size_x + j1)];
 		}
 	    }
 
@@ -406,7 +402,7 @@ for(i = 0; i<xsize*ysize/block_size; i++){
   v_pgm_sorted = NULL;
   free (G_dic);
   G_dic = NULL;
-  
+
   return EXIT_SUCCESS;
 }
 
@@ -420,146 +416,185 @@ for(i = 0; i<xsize*ysize/block_size; i++){
  * @param 
  * @param 
  */
-int* kernel_execute_quadratic(int *v_pgm, int ysize, int xsize, int block_size_x, int block_size_y, int num_codewords){
+int *
+kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
+			  int block_size_y, int num_codewords)
+{
 
-    // Load the kernel source code into the array source_str
-    FILE *fp;
-    char *source_str;
-    size_t source_size;
-    int *v_output = NULL;
+  // Load the kernel source code into the array source_str
+  FILE *fp;
+  char *source_str;
+  size_t source_size;
+  int *v_output = NULL;
 
-    // create the vector that will contain the coded pgm
-    v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
+  // create the vector that will contain the coded pgm
+  v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
 
-    fp = fopen(G_FILENAME_QUADRATIC_CL, "r");
-    if (!fp) {
-        fprintf(stderr, "Failed to load kernel.\n");
-        exit(1);
+  fp = fopen (G_FILENAME_QUADRATIC_CL, "r");
+  if (!fp)
+    {
+      fprintf (stderr, "Failed to load kernel.\n");
+      exit (1);
     }
 
-    source_str = (char*)malloc(MAX_SOURCE_SIZE);
-    source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
-    fclose( fp );
- 
-    // Get platform and device information
-    cl_platform_id platform_id = NULL;
-    cl_device_id device_id = NULL;   
-    cl_uint ret_num_devices;
-    cl_uint ret_num_platforms = 0;
+  source_str = (char *) malloc (MAX_SOURCE_SIZE);
+  source_size = fread (source_str, 1, MAX_SOURCE_SIZE, fp);
+  fclose (fp);
+
+  // Get platform and device information
+  cl_platform_id platform_id = NULL;
+  cl_device_id device_id = NULL;
+  cl_uint ret_num_devices;
+  cl_uint ret_num_platforms = 0;
 
 // retrieve a list of platforms avaible
-    cl_int ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
-	checkErr(ret, "Unable to get platform_id.");
+  cl_int ret = clGetPlatformIDs (1, &platform_id, &ret_num_platforms);
+  checkErr (ret, "Unable to get platform_id.");
 
-	ret = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_DEFAULT, 1, 
-            &device_id, &ret_num_devices);
-	checkErr(ret, "Unable to get device_id.");
+// try to get a supported GPU device
+  ret = clGetDeviceIDs (platform_id, CL_DEVICE_TYPE_DEFAULT, 1,
+			&device_id, &ret_num_devices);
+  checkErr (ret, "Unable to get device_id.");
 
-    // context properties list - must be terminated with 0
-        cl_context_properties properties[3];
-	properties[0]= CL_CONTEXT_PLATFORM;
-	properties[1]= (cl_context_properties) platform_id;
-	properties[2]= 0; 
+  // context properties list - must be terminated with 0
+  cl_context_properties properties[3];
+  properties[0] = CL_CONTEXT_PLATFORM;
+  properties[1] = (cl_context_properties) platform_id;
+  properties[2] = 0;
 
 // create a context with the GPU device
-	cl_context context = clCreateContext(properties,1,&device_id,NULL,NULL,&ret);
-	checkErr(ret, "Unable to create a context with GPU device.");
- 
-    // Create a command queue
-    cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
-checkErr(ret, "Unable to create command queue.");
- 
-    // Create memory buffers on the device for each vector 
-    cl_mem pgm_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, 
-            G_BlocksPerGrid * block_size_x * block_size_y * sizeof(int), NULL, &ret);
-checkErr(ret, "Unable to create pgm buffer.");    
+  cl_context context =
+    clCreateContext (properties, 1, &device_id, NULL, NULL, &ret);
+  checkErr (ret, "Unable to create a context with GPU device.");
 
-cl_mem dict_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY,
-            num_codewords * block_size_y * block_size_x * sizeof(int), NULL, &ret);
-checkErr(ret, "Unable to create dictionary buffer.");    
+  // Create a command queue
+  cl_command_queue command_queue =
+    clCreateCommandQueue (context, device_id, 0, &ret);
+  checkErr (ret, "Unable to create command queue.");
 
-cl_mem output_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 
-            G_BlocksPerGrid * sizeof(int), NULL, &ret);
- checkErr(ret, "Unable to create output buffer.");
+  // Create a program from the kernel source
+  cl_program program = clCreateProgramWithSource (context, 1,
+						  (const char **) &source_str,
+						  (const size_t *)
+						  &source_size, &ret);
+  checkErr (ret, "Unable to create program.");
 
-    // Copy the lists pgm and dictionary to their respective memory buffers
-    ret = clEnqueueWriteBuffer(command_queue, pgm_mem_obj, CL_TRUE, 0,
-            G_BlocksPerGrid * block_size_x * block_size_y * sizeof(int), v_pgm, 0, NULL, NULL);
-checkErr(ret, "Unable to load data into the pgm buffer.");	    
-
-ret = clEnqueueWriteBuffer(command_queue, dict_mem_obj, CL_TRUE, 0, 
-            num_codewords * block_size_y * block_size_x * sizeof(int), G_dic, 0, NULL, NULL);
- checkErr(ret, "Unable to load data into the dictionary buffer.");	
-
-    // Create a program from the kernel source
-    cl_program program = clCreateProgramWithSource(context, 1, 
-            (const char **)&source_str, (const size_t *)&source_size, &ret);
- checkErr(ret, "Unable to create program.");
-    
 // Build the program
-    ret = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    checkErr(ret, "Unable to build program.");
- 
-    // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "kernel_quadratic", &ret);
-    checkErr(ret, "Unable to run kernel.");
+  ret = clBuildProgram (program, 0, NULL, NULL, NULL, NULL);
 
-    // Set the arguments of the kernel
-    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&pgm_mem_obj);
-	checkErr(ret, "Unable to set pgm argument.");
-	    
-ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&dict_mem_obj);
-checkErr(ret, "Unable to set dictionary argument.");	
-    
-ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&output_mem_obj);
-checkErr(ret, "Unable to set the output argument.");	 
-    
+  if (ret != CL_SUCCESS)
+    {
+      //get build error info
+      build_fail_log (program, device_id);
+      checkErr (ret, "Unable to get build the kernel.");
+    }
+
+  // Create the OpenCL kernel
+  cl_kernel kernel = clCreateKernel (program, "encoding_pgm", &ret);
+  checkErr (ret, "Unable to run kernel.");
+
+// Create memory buffers on the device for each vector 
+  cl_mem pgm_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
+				       G_BlocksPerGrid * block_size_x *
+				       block_size_y * sizeof (int), NULL,
+				       &ret);
+  checkErr (ret, "Unable to create pgm buffer.");
+
+  cl_mem dict_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
+					num_codewords * block_size_y *
+					block_size_x * sizeof (int), NULL,
+					&ret);
+  checkErr (ret, "Unable to create dictionary buffer.");
+
+  cl_mem output_mem_obj = clCreateBuffer (context, CL_MEM_WRITE_ONLY,
+					  G_BlocksPerGrid * sizeof (int),
+					  NULL, &ret);
+  checkErr (ret, "Unable to create output buffer.");
+  
+// Copy the vectores,  pgm and dictionary, to their respective memory buffers
+  ret = clEnqueueWriteBuffer (command_queue, pgm_mem_obj, CL_TRUE, 0,
+			      G_BlocksPerGrid * block_size_x * block_size_y *
+			      sizeof (int), v_pgm, 0, NULL, NULL);
+  checkErr (ret, "Unable to load data into the pgm buffer.");
+
+  ret = clEnqueueWriteBuffer (command_queue, dict_mem_obj, CL_TRUE, 0,
+			      num_codewords * block_size_y * block_size_x *
+			      sizeof (int), G_dic, 0, NULL, NULL);
+  checkErr (ret, "Unable to load data into the dictionary buffer.");
+
+  // Set the arguments of the kernel
+  ret = clSetKernelArg (kernel, 0, sizeof (int), (void *) &num_codewords);
+  checkErr (ret, "Unable to set num_codewords argument.");
+
+  int block_size = block_size_x * block_size_y;
+  ret = clSetKernelArg (kernel, 1, sizeof (int), (void *) &block_size);
+  checkErr (ret, "Unable to set block_size argument.");
+
+  int num_blocks = G_BlocksPerGrid;
+  ret = clSetKernelArg (kernel, 2, sizeof (int), (void *) &num_blocks);
+  checkErr (ret, "Unable to set num_blocks argument.");
+
+  int num_threads = G_ThreadsPerBlock;
+  ret = clSetKernelArg (kernel, 3, sizeof (int), (void *) &num_threads);
+  checkErr (ret, "Unable to set num_threads argument.");
+
+  ret = clSetKernelArg (kernel, 4, sizeof (cl_mem), (void *) &dict_mem_obj);
+  checkErr (ret, "Unable to set dictionary argument.");
+
+  ret = clSetKernelArg (kernel, 5, sizeof (cl_mem), (void *) &pgm_mem_obj);
+  checkErr (ret, "Unable to set pgm argument.");
+
+  ret = clSetKernelArg (kernel, 6, sizeof (cl_mem), (void *) &output_mem_obj);
+  checkErr (ret, "Unable to set the output argument.");
+
 // Define kernel resources
-    size_t global_item_size = G_BlocksPerGrid*G_ThreadsPerBlock; // Process the entire lists
-    size_t local_item_size = G_ThreadsPerBlock; // Process one item at a time
-    
+  size_t global_item_size = G_BlocksPerGrid * G_ThreadsPerBlock;	// Process the entire lists
+  size_t local_item_size = G_ThreadsPerBlock;	// Process one item at a time
+
 // Execute the OpenCL kernel
-ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
-            &global_item_size, &local_item_size, 0, NULL, NULL);
-    checkErr(ret, "Unable to execute the kernel.");	 
-    
+  ret = clEnqueueNDRangeKernel (command_queue, kernel, 1, NULL,
+				&global_item_size, &local_item_size, 0, NULL,
+				NULL);
+  checkErr (ret, "Unable to execute the kernel.");
+
 // Read the memory buffer C on the device to the local variable C
-    ret = clEnqueueReadBuffer(command_queue, output_mem_obj, CL_TRUE, 0, 
-            G_BlocksPerGrid * sizeof(int), v_output, 0, NULL, NULL);
-    checkErr(ret, "Unable to read the output buffer.");	 
-    
+  ret = clEnqueueReadBuffer (command_queue, output_mem_obj, CL_TRUE, 0,
+			     G_BlocksPerGrid * sizeof (int), v_output, 0,
+			     NULL, NULL);
+  checkErr (ret, "Unable to read the output buffer.");
+
 // Clean up
-    ret = clFlush(command_queue);
-checkErr(ret, "Unable to flush command_queue.");
-    
-ret = clFinish(command_queue);
-checkErr(ret, "Unable to finish command_queue.");
+  ret = clFlush (command_queue);
+  checkErr (ret, "Unable to flush command_queue.");
 
-    ret = clReleaseKernel(kernel);
-checkErr(ret, "Unable to destory the openCL kernel.");
+  ret = clFinish (command_queue);
+  checkErr (ret, "Unable to finish command_queue.");
 
-    ret = clReleaseProgram(program);
-checkErr(ret, "Unable to destory the program.");
+  ret = clReleaseKernel (kernel);
+  checkErr (ret, "Unable to destory the openCL kernel.");
 
-    ret = clReleaseMemObject(pgm_mem_obj);
-checkErr(ret, "Unable to destory pgm vector.");
+  ret = clReleaseProgram (program);
+  checkErr (ret, "Unable to destory the program.");
 
-    ret = clReleaseMemObject(dict_mem_obj);
-checkErr(ret, "Unable to destory the dictionary.");
+  ret = clReleaseMemObject (pgm_mem_obj);
+  checkErr (ret, "Unable to destory pgm vector.");
 
-    ret = clReleaseMemObject(output_mem_obj);
-checkErr(ret, "Unable to destory the output vector.");
+  ret = clReleaseMemObject (dict_mem_obj);
+  checkErr (ret, "Unable to destory the dictionary.");
 
-    ret = clReleaseCommandQueue(command_queue);
-checkErr(ret, "Unable to destory command_queue.");
+  ret = clReleaseMemObject (output_mem_obj);
+  checkErr (ret, "Unable to destory the output vector.");
 
-    ret = clReleaseContext(context);
-checkErr(ret, "Unable to destory the context.");
+  ret = clReleaseCommandQueue (command_queue);
+  checkErr (ret, "Unable to destory command_queue.");
 
-    return v_output;
+  ret = clReleaseContext (context);
+  checkErr (ret, "Unable to destory the context.");
+
+  return v_output;
 }
 
-	
+
 /**
  *
  * @param index
@@ -1268,4 +1303,39 @@ ucmatrix (int nrl, int nrh, int ncl, int nch)
       m[i] -= ncl;
     }
   return m;
+}
+
+void
+build_fail_log (cl_program program, cl_device_id device_id)
+{
+  size_t paramValueSizeRet = 0;
+  clGetProgramBuildInfo (program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL,
+			 &paramValueSizeRet);
+
+  char *buildLogMsgBuf =
+    (char *) malloc (sizeof (char) * paramValueSizeRet + 1);
+  if (buildLogMsgBuf)
+    {
+      clGetProgramBuildInfo (program, device_id, CL_PROGRAM_BUILD_LOG,
+			     paramValueSizeRet, buildLogMsgBuf,
+			     &paramValueSizeRet);
+      buildLogMsgBuf[paramValueSizeRet] = '\0';	//mark end of message string
+
+      printf ("\n\n############# Build Log: ##################\n");
+      puts (buildLogMsgBuf);
+      fflush (stdout);
+
+      free (buildLogMsgBuf);
+    }
+}
+
+void
+checkErr (cl_int err, char *error_description)
+{
+  if (err != CL_SUCCESS)
+    {
+      printf ("\nERROR: %s\n", error_description);
+
+      exit (EXIT_FAILURE);
+    }
 }
