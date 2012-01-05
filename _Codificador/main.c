@@ -108,7 +108,7 @@ int *kernel_execute_quadratic (int *v_pgm, int ysize, int xsize,
 void build_fail_log (cl_program program, cl_device_id device_id);
 void checkErr (cl_int err, char *error_description);
 
-char *get_kernel_source_by_name(const char *file, size_t * kernel_size);
+char *get_kernel_source_by_name (const char *file, size_t * kernel_size);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +244,7 @@ main (int argc, char *argv[])
 	{
 	  v_pgm[i * xsize + j] -= average;
 	}
-  }
+    }
   //-----------------------------------------
 
 
@@ -302,11 +302,10 @@ main (int argc, char *argv[])
     kernel_execute_quadratic (v_pgm_sorted, ysize, xsize, block_size_x,
 			      block_size_y, num_codewords);
 
-/*
-for(i = 0; i<xsize*ysize/block_size; i++){
-	printf(" %d ", v_pgm_coded[i]);
-}
-*/
+  for (i = 0; i < xsize * ysize / block_size; i++)
+    {
+      printf (" %d ", v_pgm_coded[i]);
+    }
 
 //
 // END OPENCL STUFF
@@ -415,17 +414,17 @@ for(i = 0; i<xsize*ysize/block_size; i++){
 int *
 kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 			  int block_size_y, int num_codewords)
-{ 
-    int *v_output = NULL;
-    size_t kernel_size;
-	char* kernel_src;
+{
+  int *v_output = NULL;
+  size_t kernel_size;
+  char *kernel_src;
 
   // create the vector that will contain the coded pgm
   v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
 
-    // Load the kernel source code into the array source_str
-kernel_src = get_kernel_source_by_name(G_FILENAME_QUADRATIC_CL, &kernel_size);
-	printf("Kernel size: %Zd bytes\n", kernel_size);  
+  // Load the kernel source code into the array source_str
+  kernel_src =
+    get_kernel_source_by_name (G_FILENAME_QUADRATIC_CL, &kernel_size);
 
 // Get platform and device information
   cl_platform_id platform_id = NULL;
@@ -496,7 +495,7 @@ kernel_src = get_kernel_source_by_name(G_FILENAME_QUADRATIC_CL, &kernel_size);
 					  G_BlocksPerGrid * sizeof (int),
 					  NULL, &ret);
   checkErr (ret, "Unable to create output buffer.");
-  
+
 // Copy the vectores,  pgm and dictionary, to their respective memory buffers
   ret = clEnqueueWriteBuffer (command_queue, pgm_mem_obj, CL_TRUE, 0,
 			      G_BlocksPerGrid * block_size_x * block_size_y *
@@ -573,8 +572,8 @@ kernel_src = get_kernel_source_by_name(G_FILENAME_QUADRATIC_CL, &kernel_size);
 
   ret = clReleaseCommandQueue (command_queue);
   checkErr (ret, "Unable to destory command_queue.");
-  
-  free(kernel_src);
+
+  free (kernel_src);
   kernel_src = NULL;
 
   return v_output;
@@ -1332,26 +1331,28 @@ checkErr (cl_int err, char *error_description)
  * @param kernel_size the size in bytes
  * @return a string with the content of the file
  */
-char 
-*get_kernel_source_by_name(const char *file, size_t * kernel_size) {
-  
-	FILE *fp;
-	char *source_str;
-	int size;
+char *
+get_kernel_source_by_name (const char *file, size_t * kernel_size)
+{
 
-	fp = fopen(file, "r");
-	if (!fp) {
-		fprintf(stderr, "Failed to load kernel.\n");
-		exit(1);
-	}
+  FILE *fp;
+  char *source_str;
+  int size;
 
-	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
-	rewind(fp);
+  fp = fopen (file, "r");
+  if (!fp)
+    {
+      fprintf (stderr, "Failed to load kernel.\n");
+      exit (1);
+    }
 
-	source_str = (char *) malloc(size);
-	*kernel_size = fread(source_str, 1, size, fp);
+  fseek (fp, 0, SEEK_END);
+  size = ftell (fp);
+  rewind (fp);
 
-	fclose(fp);
-	return source_str;
+  source_str = (char *) malloc (size);
+  *kernel_size = fread (source_str, 1, size, fp);
+
+  fclose (fp);
+  return source_str;
 }

@@ -19,9 +19,13 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
   if (get_local_id (0) == 0)
     {
       for (i = 0; i < G_ThreadsPerBlock; i++)
-	cache_err[i] = 0.0;
-      cache_idx[i] = 0;
+	{
+	  cache_err[i] = 0.0;
+	  cache_idx[i] = 0;
+	}
     }
+
+  barrier (CLK_LOCAL_MEM_FENCE);
 
 // make the dictionary stride  
   while (tid < (G_BlocksPerGrid * num_codewords))
@@ -29,14 +33,17 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
     {
 
       i = 0;
-      temp = 0.0;
+      temp = 123.0;
       idx_dict = get_local_id (0) * pgm_block_size;
       idx_block = 0;
 
       while (i < pgm_block_size)
 	{
 	  idx_block = (get_group_id (0) * pgm_block_size) + i;
-	  temp += ((dev_dict[idx_dict + i] - dev_pgm[idx_block]) * (dev_dict[idx_dict + i] - dev_pgm[idx_block]));
+	  temp +=
+	    ((dev_dict[idx_dict + i] -
+	      dev_pgm[idx_block]) * (dev_dict[idx_dict + i] -
+				     dev_pgm[idx_block]));
 	  i++;
 	}
 
@@ -48,11 +55,21 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
       tid += jump;
     }
 
-  barrier (CLK_GLOBAL_MEM_FENCE);
+  barrier (CLK_LOCAL_MEM_FENCE);
 
   if (get_local_id (0) == 0)
-    dev_pgm_coded[get_group_id (0)] = 1;
+    {
+      float aux = FLT_MAX;
 
+      for (i = 0; i < G_ThreadsPerBlock; i++)
+	{
+	  if (cache_err[i] < aux)
+	    {
+	      aux = cache_err[i];
+	      dev_pgm_coded[get_group_id (0)] = get_global_id(0); //get_group_id(0) * get_local_size(0) + get_local_id(0);// cache_idx[i];
+	    }
+	}
+    }
 
   barrier (CLK_GLOBAL_MEM_FENCE);
 }
