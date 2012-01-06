@@ -268,7 +268,7 @@ main (int argc, char *argv[])
 //
 // calculate the quad error in the cpu
 //
-
+/*
   float distortion = 0.0;
 
   // calculate the quad error. (this will be executed on GPU)
@@ -292,7 +292,7 @@ main (int argc, char *argv[])
 
       v_pgm_coded[i / (block_size)] = index;
     }
-
+*/
 
 // 
 // OPENCL STUFF
@@ -301,11 +301,12 @@ main (int argc, char *argv[])
   v_pgm_coded =
     kernel_execute_quadratic (v_pgm_sorted, ysize, xsize, block_size_x,
 			      block_size_y, num_codewords);
-
+/*
   for (i = 0; i < xsize * ysize / block_size; i++)
     {
       printf (" %d ", v_pgm_coded[i]);
     }
+*/
 
 //
 // END OPENCL STUFF

@@ -20,7 +20,7 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
     {
       for (i = 0; i < G_ThreadsPerBlock; i++)
 	{
-	  cache_err[i] = 0.0;
+	  cache_err[i] = FLT_MAX;
 	  cache_idx[i] = 0;
 	}
     }
@@ -60,13 +60,13 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
   if (get_local_id (0) == 0)
     {
       float aux = FLT_MAX;
-
+ 
       for (i = 0; i < G_ThreadsPerBlock; i++)
 	{
 	  if (cache_err[i] < aux)
 	    {
 	      aux = cache_err[i];
-	      dev_pgm_coded[get_group_id (0)] = get_global_id(0); //get_group_id(0) * get_local_size(0) + get_local_id(0);// cache_idx[i];
+	      dev_pgm_coded[get_group_id (0)] = cache_idx[i];
 	    }
 	}
     }
