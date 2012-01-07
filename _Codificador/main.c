@@ -115,7 +115,7 @@ char *get_kernel_source_by_name (const char *file, size_t * kernel_size);
 ///                               GLOBAL VARIABLES                           ///
 ////////////////////////////////////////////////////////////////////////////////
 const int G_BlocksPerGrid = 65536;	//
-const int G_ThreadsPerBlock = 1024;	//MAX_T;;
+const int G_ThreadsPerBlock = 16;	//MAX_T;;
 const char G_FILENAME_QUADRATIC_CL[] = "quadratic_kernel.cl";
 int *G_dic;
 

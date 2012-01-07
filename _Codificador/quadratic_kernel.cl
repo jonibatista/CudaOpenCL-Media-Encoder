@@ -1,5 +1,5 @@
 #define G_BlocksPerGrid   65536
-#define G_ThreadsPerBlock 1024
+#define G_ThreadsPerBlock 16
 
 __kernel void
 encoding_pgm (const int num_codewords, const int pgm_block_size,
@@ -12,9 +12,11 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
 
 
   int i, idx_dict, idx_block;
-  int tid = get_global_id (0);
-  int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
+  long int tid = get_global_id (0);
+  long int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
+  int global_size = get_global_size(0)-1; // lets us know when starts the local stride
   float temp = 0.0;
+  long int local_stride = 0; // jump number in the dict
 
   if (get_local_id (0) == 0)
     {
@@ -31,10 +33,13 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
   while (tid < (G_BlocksPerGrid * num_codewords))
 
     {
-
+      if(tid > global_size){
+	idx_dict += get_local_size(0) * pgm_block_size;
+      }else{ 	
+      	idx_dict = get_local_id (0) * pgm_block_size;
+}
       i = 0;
-      temp = 123.0;
-      idx_dict = get_local_id (0) * pgm_block_size;
+      temp = 0.0;
       idx_block = 0;
 
       while (i < pgm_block_size)
