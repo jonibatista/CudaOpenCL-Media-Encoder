@@ -114,8 +114,8 @@ char *get_kernel_source_by_name (const char *file, size_t * kernel_size);
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
 ////////////////////////////////////////////////////////////////////////////////
-const int G_BlocksPerGrid = 65536;	//
-const int G_ThreadsPerBlock = 16;	//MAX_T;;
+const int G_BlocksPerGrid = 741376;	//
+const int G_ThreadsPerBlock = 64;	//MAX_T;;
 const char G_FILENAME_QUADRATIC_CL[] = "quadratic_kernel.cl";
 int *G_dic;
 
@@ -419,8 +419,10 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
   int *v_output = NULL;
   size_t kernel_size;
   char *kernel_src;
-
-  // create the vector that will contain the coded pgm
+  int block_size = block_size_x * block_size_y;
+  int num_blocks = ysize * xsize / block_size;
+  
+// create the vector that will contain the coded pgm
   v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
 
   // Load the kernel source code into the array source_str
@@ -481,30 +483,28 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 
 // Create memory buffers on the device for each vector 
   cl_mem pgm_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
-				       G_BlocksPerGrid * block_size_x *
-				       block_size_y * sizeof (int), NULL,
+				       num_blocks * block_size * sizeof (int), NULL,
 				       &ret);
   checkErr (ret, "Unable to create pgm buffer.");
 
   cl_mem dict_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
-					num_codewords * block_size_y *
-					block_size_x * sizeof (int), NULL,
+					num_codewords * block_size * sizeof (int), NULL,
 					&ret);
   checkErr (ret, "Unable to create dictionary buffer.");
 
   cl_mem output_mem_obj = clCreateBuffer (context, CL_MEM_WRITE_ONLY,
-					  G_BlocksPerGrid * sizeof (int),
+					  num_blocks * sizeof (int),
 					  NULL, &ret);
   checkErr (ret, "Unable to create output buffer.");
 
 // Copy the vectores,  pgm and dictionary, to their respective memory buffers
   ret = clEnqueueWriteBuffer (command_queue, pgm_mem_obj, CL_TRUE, 0,
-			      G_BlocksPerGrid * block_size_x * block_size_y *
+			      num_blocks * block_size *
 			      sizeof (int), v_pgm, 0, NULL, NULL);
   checkErr (ret, "Unable to load data into the pgm buffer.");
 
   ret = clEnqueueWriteBuffer (command_queue, dict_mem_obj, CL_TRUE, 0,
-			      num_codewords * block_size_y * block_size_x *
+			      num_codewords * block_size *
 			      sizeof (int), G_dic, 0, NULL, NULL);
   checkErr (ret, "Unable to load data into the dictionary buffer.");
 
@@ -512,11 +512,9 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
   ret = clSetKernelArg (kernel, 0, sizeof (int), (void *) &num_codewords);
   checkErr (ret, "Unable to set num_codewords argument.");
 
-  int block_size = block_size_x * block_size_y;
   ret = clSetKernelArg (kernel, 1, sizeof (int), (void *) &block_size);
   checkErr (ret, "Unable to set block_size argument.");
 
-  int num_blocks = G_BlocksPerGrid;
   ret = clSetKernelArg (kernel, 2, sizeof (int), (void *) &num_blocks);
   checkErr (ret, "Unable to set num_blocks argument.");
 
@@ -545,7 +543,7 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 
 // Read the memory buffer C on the device to the local variable C
   ret = clEnqueueReadBuffer (command_queue, output_mem_obj, CL_TRUE, 0,
-			     G_BlocksPerGrid * sizeof (int), v_output, 0,
+			     num_blocks * sizeof (int), v_output, 0,
 			     NULL, NULL);
   checkErr (ret, "Unable to read the output buffer.");
 
