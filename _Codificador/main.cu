@@ -97,9 +97,9 @@ HandleError (cudaError_t err, const char *file, int line)
  **/
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
 
-const int G_BlocksPerGrid = 65535;
+const int G_BlocksPerGrid = 32768;//65535;
 
-const int G_ThreadsPerBlock = 1024;//1024;	//MAX_T;;
+const int G_ThreadsPerBlock = 1024;	//1024;      //MAX_T;;
 
 
 
@@ -116,8 +116,7 @@ const int G_ThreadsPerBlock = 1024;//1024;	//MAX_T;;
  * @param dev_pgm_coded encoding result
  */
 __global__ void
-encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict,
-	      int *dev_pgm, int *dev_pgm_coded)
+encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm, int *dev_pgm_coded)
 {
   __shared__ float cache_err[G_ThreadsPerBlock];
   __shared__ int cache_idx[G_ThreadsPerBlock];
@@ -127,14 +126,18 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict,
   int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
   int cache_index = threadIdx.x;
   float temp = 0.0;
+   
 
   if (threadIdx.x == 0)
-    {
+   {
+  //    printf("%d ", tid);
       for (i = 0; i < G_ThreadsPerBlock; i++)
-	cache_err[i] = FLT_MAX;
-      cache_idx[i] = 0;
-
+	{
+	  cache_err[i] = FLT_MAX;
+	  cache_idx[i] = 0;
+	}
     }
+
   __syncthreads ();
 
   // make the dictionary stride  
@@ -164,7 +167,7 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict,
 	  cache_err[cache_index] = temp;
 	  cache_idx[cache_index] = idx_dict;
 	}
-      tid += jump;
+   tid += jump;
     }
 
   __syncthreads ();
@@ -177,15 +180,14 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict,
 	{
 	  if (cache_err[i] < aux);
 	  {
-	    // printf(" %d ", i);
+	    //printf(" %d ", i);
 	    aux = cache_err[i];
-	    dev_pgm_coded[blockIdx.x] = gridDim.x;// blockIdx.x;//(blockIdx.x * blockDim.x) + threadIdx.x;//cache_idx[i];
+            dev_pgm_coded[blockIdx.x] = cache_idx[i];
 	  }
 	}
 //               printf(" %d=>%d ", blockIdx.x, dev_pgm_coded[blockIdx.x]);
-  
-}
-  __syncthreads ();
+
+    }
 }
 
 
@@ -285,7 +287,7 @@ main (int argc, char *argv[])
   dic_name = args_info.dictionary_arg;
   outname = args_info.file_arg;
 
-
+//printf("\n\n###### Nº max blocks: %d\n##### Nº max threads por block: %d\n\n", max_number_blocks(), max_number_threads());
   //Carrega dicionario
   load_dictionary (dic_name, &num_codewords, &block_size_x, &block_size_y);
   bits_index = ceil (log (num_codewords) / log (2));
@@ -378,47 +380,18 @@ main (int argc, char *argv[])
   //
 
   //call encoding function 
- // kernel_threads_per_codwords (block_size, num_codewords, xsize, ysize,
-//			       v_pgm_sorted, v_pgm_coded);
-//
-    // CUDA STUFF
-    // calculate all quad error and create the pgm encoded
-    //
+   kernel_threads_per_codwords (block_size, num_codewords, xsize, ysize,
+                             v_pgm_sorted, v_pgm_coded);
 
-    // the gpu device vectors
-    int *dev_pgm;
-    int *dev_dict;
-    int *dev_pgm_coded;
-
-    // alloc memory to cuda vectors
-    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm, (size_t) (ysize * xsize) * sizeof (int)));
-    HANDLE_ERROR(cudaMalloc((void **) &dev_dict, (size_t) (ysize * xsize) * sizeof (int)));
-    HANDLE_ERROR(cudaMalloc((void **) &dev_pgm_coded, G_BlocksPerGrid * sizeof (int)));
-
-    // copy the vectors data fom host to gpu device
-    HANDLE_ERROR(cudaMemcpy(dev_pgm, v_pgm, (ysize * xsize) * sizeof (int), cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(dev_dict, G_dic, num_codewords * block_size * sizeof (int), cudaMemcpyHostToDevice));
-
-    // execute GPU KERNEL
-    encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> > (num_codewords, block_size_x * block_size_y, dev_dict, dev_pgm, dev_pgm_coded);
-
-    // copy the vector with the pgm coded from dpu decive to host
-    HANDLE_ERROR(cudaMemcpy(v_pgm_coded, dev_pgm_coded, (G_BlocksPerGrid) * sizeof (int), cudaMemcpyDeviceToHost));
-
-    // cuda free memory
-    cudaFree(dev_pgm); dev_pgm = NULL;
-    cudaFree(dev_dict); dev_dict = NULL;
-    cudaFree(dev_pgm_coded); dev_pgm_coded = NULL;
-     
 //
 //END CUDA STUFF
 //
 
 // compare gpu encoded with cpu encoded
- for (i = 0;  i < xsize * ysize / block_size; i++)
+  /*for (i = 0; i < xsize * ysize / block_size; i++)
     {
       printf ("%d ", v_pgm_coded[i]);
-    }
+    }*/
 
   // verificar esta código... 
   for (i = 0; i < ysize; i += block_size_y)
@@ -555,8 +528,8 @@ kernel_threads_per_codwords (int block_size, int num_codewords, int xsize,
       printf ("int_vector() - allocation failure 1 \n");
       exit (1);
     }
-for(i=0; i < G_BlocksPerGrid; i++)
-v_pgm_coded_temp[i]=0;
+  for (i = 0; i < G_BlocksPerGrid; i++)
+    v_pgm_coded_temp[i] = 0;
   int num_gpu_calls = ((xsize * ysize) / block_size) / G_BlocksPerGrid;
   int num_blocks_grid = G_BlocksPerGrid, missing_blocks = 0;
 
@@ -602,7 +575,13 @@ v_pgm_coded_temp[i]=0;
 		     cudaMemcpyHostToDevice));
 
       // execute GPU KERNEL
-      encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock>> >(num_codewords, block_size, dev_dict, dev_pgm, dev_pgm_coded);
+      encoding_pgm << <G_BlocksPerGrid, G_ThreadsPerBlock >> >(num_codewords,
+							       block_size,
+							       dev_dict,
+							       dev_pgm,
+							       dev_pgm_coded);
+		
+cudaThreadSynchronize();
 
       // copy the vector with the pgm coded from dpu decive to host
       HANDLE_ERROR (cudaMemcpy
@@ -615,7 +594,6 @@ v_pgm_coded_temp[i]=0;
 	{
 	  v_pgm_coded[(G_BlocksPerGrid * it_gpu_results) + i1] =
 	    v_pgm_coded_temp[i1];
-
 	}
 
       if (missing_blocks != 0 && num_gpu_calls == it_gpu_results + 1)
@@ -1387,3 +1365,58 @@ ucmatrix (int nrl, int nrh, int ncl, int nch)
     }
   return m;
 }
+////////////////////////////////////////////////////////////////////////////////
+///   Copyright (C) 2008 by Nelson Carreira Francisco                        ///
+///   eng.nelsito@gmail.com                                                  ///
+///                                                                          ///
+///   This program is free software; you can redistribute it and/or modify   ///
+///   it under the terms of the GNU General Public License as published by   ///
+///   the Free Software Foundation; either version 2 of the License, or      ///
+///   (at your option) any later version.                                    ///
+///                                                                          ///
+///   This program is distributed in the hope that it will be useful,        ///
+///   but WITHOUT ANY WARRANTY; without even the implied warranty of         ///
+///   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          ///
+///   GNU General Public License for more details.                           ///
+///                                                                          ///
+///   You should have received a copy of the GNU General Public License      ///
+///   along with this program; if not, write to the                          ///
+///   Free Software Foundation, Inc.,                                        ///
+///   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.              ///
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+///   Implementacaoo de um codificador de imagens baseado em                 ///
+///   Quantificacao vectorial                                                ///
+///   Nelson Carreira Francisco                                              ///
+////////////////////////////////////////////////////////////////////////////////
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <float.h>
+#include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <time.h>
+#include <iostream>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "params.h"
+
+
+////////////////////////////////////////////////////////////////////////////////
+///                         CONSTANTS ERROR                                  ///
+////////////////////////////////////////////////////////////////////////////////
+#define ERROR_INVALID_PARAMETERS 1
+#define ERROR_ALLOCATE_MEMORY 2
+#define ERROR_OPEN_FILE
+#define ERROR_INVALID_PARAMETERS 1

@@ -19,20 +19,20 @@ CFLAGS += $(COMMONFLAGS)
 SOURCES1 = params.c
 OBJECTS1 = params.o
 
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 
 PROC = `uname -m`
 PROC64 = "x86_64"
 PROC32 = "i686"
 
-file:
-	ifeq "$(PROC)" "$(PROC64)"
-		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
-		@echo " Strings are equal."
-	else
-		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
-		@echo " Strings differ."
-	endif
+#file:
+#	ifeq "$(PROC)" "$(PROC64)"
+#		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+#		@echo " Strings are equal."
+#	else
+#		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+#		@echo " Strings differ."
+#	endif
 
 
 OBJS = main.cu.o
