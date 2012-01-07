@@ -126,7 +126,8 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
   int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
   int cache_index = threadIdx.x;
   float temp = 0.0;
-   
+  
+  if(tid == 0) for(i = 0; i<G_BlocksPerGrid; i++) dev_pgm_coded[i]=-1; 
 
   if (threadIdx.x == 0)
    {
@@ -141,7 +142,7 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
   __syncthreads ();
 
   // make the dictionary stride  
-  while (tid < (G_BlocksPerGrid * num_codewords))
+  if (tid < (G_BlocksPerGrid * num_codewords))
 
     {
 
@@ -165,9 +166,9 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
       if (cache_err[cache_index] > temp)
 	{
 	  cache_err[cache_index] = temp;
-	  cache_idx[cache_index] = idx_dict;
+	  cache_idx[cache_index] = idx_dict/pgm_block_size;
 	}
-   tid += jump;
+   //tid += jump;
     }
 
   __syncthreads ();
@@ -182,7 +183,7 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
 	  {
 	    //printf(" %d ", i);
 	    aux = cache_err[i];
-            dev_pgm_coded[blockIdx.x] = cache_idx[i];
+          dev_pgm_coded[blockIdx.x] = cache_idx[i];
 	  }
 	}
 //               printf(" %d=>%d ", blockIdx.x, dev_pgm_coded[blockIdx.x]);
@@ -388,10 +389,10 @@ main (int argc, char *argv[])
 //
 
 // compare gpu encoded with cpu encoded
-  /*for (i = 0; i < xsize * ysize / block_size; i++)
+  for (i = 0; i < xsize * ysize / block_size; i++)
     {
       printf ("%d ", v_pgm_coded[i]);
-    }*/
+    }
 
   // verificar esta código... 
   for (i = 0; i < ysize; i += block_size_y)
