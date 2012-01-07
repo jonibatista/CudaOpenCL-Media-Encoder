@@ -50,7 +50,7 @@ encoding_pgm (const int num_codewords, const int pgm_block_size,
       if (cache_err[get_local_id (0)] > temp)
 	{
 	  cache_err[get_local_id (0)] = temp;
-	  cache_idx[get_local_id (0)] = idx_dict;
+	  cache_idx[get_local_id (0)] = idx_dict/pgm_block_size;
 	}
       tid += jump;
     }
