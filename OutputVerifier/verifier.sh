@@ -16,6 +16,9 @@ if [ "$1" = "small" ]; then
 elif [ "$1" = "medium" ]; then
 	#echo "medium"
 	Files_L="ILikeEI"
+elif [ "$1" = "large" ]; then
+	#echo "large"
+	Files_L="Informatica_e_no_IPL---cartaz"
 else 
 	#echo "no params";
 	Files_L="Informatica_e_no_IPL---cartaz
