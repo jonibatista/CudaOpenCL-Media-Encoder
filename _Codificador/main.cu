@@ -120,19 +120,15 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
 {
   __shared__ float cache_err[G_ThreadsPerBlock];
   __shared__ int cache_idx[G_ThreadsPerBlock];
-
+  
   int i, idx_dict, idx_block;
   int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-  int jump = G_BlocksPerGrid * G_ThreadsPerBlock;
-  int cache_index = threadIdx.x;
+  long int jump = blockDim.x * gridDim.x;
+  int global_size = blockDim.x * gridDim.x - 1; // lets us know when starts the local stride
   float temp = 0.0;
-  
-  if(tid == 0) for(i = 0; i<G_BlocksPerGrid; i++) dev_pgm_coded[i]=-1; 
 
-  if (threadIdx.x == 0)
-   {
-  //    printf("%d ", tid);
-      for (i = 0; i < G_ThreadsPerBlock; i++)
+  if (threadIdx.x == 0){
+      for (i = 0; i < blockDim.x; i++)
 	{
 	  cache_err[i] = FLT_MAX;
 	  cache_idx[i] = 0;
@@ -141,20 +137,21 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
 
   __syncthreads ();
 
-  // make the dictionary stride  
-  if (tid < (G_BlocksPerGrid * num_codewords))
+// make the dictionary stride  
+  while (tid < (gridDim.x * num_codewords))
 
     {
-
+      if(tid > global_size){
+	idx_dict += threadIdx.x * pgm_block_size;
+      }else{ 	
+      	idx_dict = threadIdx.x * pgm_block_size;
+}
       i = 0;
       temp = 0.0;
-
-      idx_dict = threadIdx.x * pgm_block_size;
       idx_block = 0;
 
       while (i < pgm_block_size)
 	{
-
 	  idx_block = (blockIdx.x * pgm_block_size) + i;
 	  temp +=
 	    ((dev_dict[idx_dict + i] -
@@ -163,31 +160,28 @@ encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm
 	  i++;
 	}
 
-      if (cache_err[cache_index] > temp)
+      if (cache_err[threadIdx.x] > temp)
 	{
-	  cache_err[cache_index] = temp;
-	  cache_idx[cache_index] = idx_dict/pgm_block_size;
+	  cache_err[threadIdx.x] = temp;
+	  cache_idx[threadIdx.x] = idx_dict/pgm_block_size;
 	}
-   //tid += jump;
+      tid += jump;
     }
 
   __syncthreads ();
 
-  if (threadIdx.x == 0)
+if (threadIdx.x == 0)
     {
       float aux = FLT_MAX;
-
-      for (i = 0; i < G_ThreadsPerBlock; i++)
+ 
+      for (i = 0; i < blockDim.x; i++)
 	{
-	  if (cache_err[i] < aux);
-	  {
-	    //printf(" %d ", i);
-	    aux = cache_err[i];
-          dev_pgm_coded[blockIdx.x] = cache_idx[i];
-	  }
+	  if (cache_err[i] < aux)
+	    {
+	      aux = cache_err[i];
+	      dev_pgm_coded[blockIdx.x] = cache_idx[i];
+	    }
 	}
-//               printf(" %d=>%d ", blockIdx.x, dev_pgm_coded[blockIdx.x]);
-
     }
 }
 
@@ -389,10 +383,11 @@ main (int argc, char *argv[])
 //
 
 // compare gpu encoded with cpu encoded
-  for (i = 0; i < xsize * ysize / block_size; i++)
+/*  for (i = 0; i < xsize * ysize / block_size; i++)
     {
       printf ("%d ", v_pgm_coded[i]);
     }
+*/
 
   // verificar esta código... 
   for (i = 0; i < ysize; i += block_size_y)
