@@ -33,6 +33,7 @@ make >/dev/null 2>&1
 
 
 # Create tree output
+cd ..
 tree -o tree.out
 
 
