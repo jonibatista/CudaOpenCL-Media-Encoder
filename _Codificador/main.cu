@@ -22,6 +22,7 @@
 ///   Implementacaoo de um codificador de imagens baseado em                 ///
 ///   Quantificacao vectorial                                                ///
 ///   Nelson Carreira Francisco                                              ///
+///   Optimized by César Ferreira e Jóni Batista                           ///
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -97,11 +98,9 @@ HandleError (cudaError_t err, const char *file, int line)
  **/
 #define HANDLE_ERROR(err) (HandleError((err), __FILE__, __LINE__ ))
 
-const int G_BlocksPerGrid = 32768;//65535;
 
-const int G_ThreadsPerBlock = 1024;	//1024;      //MAX_T;;
-
-
+const int G_BlocksPerGrid = 65535;	//65535; => tesla max
+const int G_ThreadsPerBlock = 64;	//1024; => tesla max
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                             CUDA KERNEL                                  ///
@@ -116,70 +115,79 @@ const int G_ThreadsPerBlock = 1024;	//1024;      //MAX_T;;
  * @param dev_pgm_coded encoding result
  */
 __global__ void
-encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict, int *dev_pgm, int *dev_pgm_coded)
+encoding_pgm (int num_codewords, int pgm_block_size, int *dev_dict,
+	      int *dev_pgm, int *dev_pgm_coded, int num_blocks)
 {
-  __shared__ float cache_err[G_ThreadsPerBlock];
-  __shared__ int cache_idx[G_ThreadsPerBlock];
-  
-  int i, idx_dict, idx_block;
-  int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-  long int jump = blockDim.x * gridDim.x;
-  int global_size = blockDim.x * gridDim.x - 1; // lets us know when starts the local stride
-  float temp = 0.0;
 
-  if (threadIdx.x == 0){
-      for (i = 0; i < blockDim.x; i++)
+  if (blockIdx.x < num_blocks)
+    {
+      __shared__ float cache_err[G_ThreadsPerBlock];
+      __shared__ int cache_idx[G_ThreadsPerBlock];
+
+      int i, idx_dict, idx_block;
+      int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+      long int jump = blockDim.x * gridDim.x;
+      int global_size = blockDim.x * gridDim.x - 1;	// lets us know when starts the local stride
+      float temp = 0.0;
+
+      if (threadIdx.x == 0)
 	{
-	  cache_err[i] = FLT_MAX;
-	  cache_idx[i] = 0;
+	  for (i = 0; i < blockDim.x; i++)
+	    {
+	      cache_err[i] = FLT_MAX;
+	      cache_idx[i] = 0;
+	    }
 	}
-    }
 
-  __syncthreads ();
+      __syncthreads ();
 
 // make the dictionary stride  
-  while (tid < (gridDim.x * num_codewords))
+      while (tid < (gridDim.x * num_codewords))
 
-    {
-      if(tid > global_size){
-	idx_dict += threadIdx.x * pgm_block_size;
-      }else{ 	
-      	idx_dict = threadIdx.x * pgm_block_size;
-}
-      i = 0;
-      temp = 0.0;
-      idx_block = 0;
-
-      while (i < pgm_block_size)
 	{
-	  idx_block = (blockIdx.x * pgm_block_size) + i;
-	  temp +=
-	    ((dev_dict[idx_dict + i] -
-	      dev_pgm[idx_block]) * (dev_dict[idx_dict + i] -
-				     dev_pgm[idx_block]));
-	  i++;
-	}
-
-      if (cache_err[threadIdx.x] > temp)
-	{
-	  cache_err[threadIdx.x] = temp;
-	  cache_idx[threadIdx.x] = idx_dict/pgm_block_size;
-	}
-      tid += jump;
-    }
-
-  __syncthreads ();
-
-if (threadIdx.x == 0)
-    {
-      float aux = FLT_MAX;
- 
-      for (i = 0; i < blockDim.x; i++)
-	{
-	  if (cache_err[i] < aux)
+	  if (tid > global_size)
 	    {
-	      aux = cache_err[i];
-	      dev_pgm_coded[blockIdx.x] = cache_idx[i];
+	      idx_dict += threadIdx.x * pgm_block_size;
+	    }
+	  else
+	    {
+	      idx_dict = threadIdx.x * pgm_block_size;
+	    }
+	  i = 0;
+	  temp = 0.0;
+	  idx_block = 0;
+
+	  while (i < pgm_block_size)
+	    {
+	      idx_block = (blockIdx.x * pgm_block_size) + i;
+	      temp +=
+		((dev_dict[idx_dict + i] -
+		  dev_pgm[idx_block]) * (dev_dict[idx_dict + i] -
+					 dev_pgm[idx_block]));
+	      i++;
+	    }
+
+	  if (cache_err[threadIdx.x] > temp)
+	    {
+	      cache_err[threadIdx.x] = temp;
+	      cache_idx[threadIdx.x] = idx_dict / pgm_block_size;
+	    }
+	  tid += jump;
+	}
+
+      __syncthreads ();
+
+      if (threadIdx.x == 0)
+	{
+	  float aux = FLT_MAX;
+
+	  for (i = 0; i < blockDim.x; i++)
+	    {
+	      if (cache_err[i] < aux)
+		{
+		  aux = cache_err[i];
+		  dev_pgm_coded[blockIdx.x] = cache_idx[i];
+		}
 	    }
 	}
     }
@@ -220,6 +228,7 @@ int max_number_blocks ();
 void kernel_threads_per_codwords (int block_size, int num_codewords,
 				  int xsize, int ysize, int *v_pgm_sorted,
 				  int *v_pgm_coded);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
@@ -272,6 +281,12 @@ main (int argc, char *argv[])
 
   FILE *pointf_out;
 
+
+  printf ("=====================================================");
+  printf ("\n Total de blocos do GPU: %d", G_BlocksPerGrid);
+  printf ("\n Total de Threads de cada Bloco do GPU:  %d", G_ThreadsPerBlock);
+  printf ("\n=====================================================");
+
   // validate parameters
   if (cmdline_parser (argc, argv, &args_info) != 0)
     {
@@ -282,11 +297,15 @@ main (int argc, char *argv[])
   dic_name = args_info.dictionary_arg;
   outname = args_info.file_arg;
 
-//printf("\n\n###### Nº max blocks: %d\n##### Nº max threads por block: %d\n\n", max_number_blocks(), max_number_threads());
   //Carrega dicionario
   load_dictionary (dic_name, &num_codewords, &block_size_x, &block_size_y);
   bits_index = ceil (log (num_codewords) / log (2));
+
   block_size = block_size_x * block_size_y;
+  int dict_statistics[num_codewords][block_size];
+  for (i = 0; i < num_codewords; i++)
+    for (j = 0; j < block_size; j++)
+      dict_statistics[i][j] = G_dic[i * block_size + j];
 
   original_block = (int *) calloc (block_size, sizeof (int));
   if (!original_block)
@@ -294,7 +313,7 @@ main (int argc, char *argv[])
       printf ("int_matrix() - allocation failure 1 \n");
       exit (1);
     }
-
+ 
   //Le imagem a comprimir
   printf ("\n imagem a comprimir            : %s", inname);
   read_header_pgm (&ysize, &xsize, inname);	/* Reads the PGM file and returns the picture size */
@@ -375,8 +394,8 @@ main (int argc, char *argv[])
   //
 
   //call encoding function 
-   kernel_threads_per_codwords (block_size, num_codewords, xsize, ysize,
-                             v_pgm_sorted, v_pgm_coded);
+  kernel_threads_per_codwords (block_size, num_codewords, xsize, ysize,
+			       v_pgm_sorted, v_pgm_coded);
 
 //
 //END CUDA STUFF
@@ -389,17 +408,20 @@ main (int argc, char *argv[])
     }
 */
 
-  // verificar esta código... 
+  // estatistics
   for (i = 0; i < ysize; i += block_size_y)
     {
       for (j = 0; j < xsize; j += block_size_x)
 	{
+	  index =
+	    v_pgm_coded[(i / block_size_y) * (xsize / block_size_x) +
+			(j / block_size_x)];
 	  for (i1 = 0; i1 < block_size_y; i1++)
 	    {
 	      for (j1 = 0; j1 < block_size_x; j1++)
 		{
 		  image_out[i + i1][j + j1] =
-		    G_dic[index * block_size_x + (i1 * block_size_x + j1)];
+		    dict_statistics[index][i1 * block_size_x + j1];
 		}
 	    }
 
@@ -449,8 +471,6 @@ main (int argc, char *argv[])
   printf ("\n mse                           : %f", mse);
   printf ("\n-----------------------------------------------------\n\n");
 
-
-  //write_f_pgm(image_out, *ysize, *xsize, "Testeout.pgm");
 
   fclose (pointf_out);
 
@@ -575,9 +595,9 @@ kernel_threads_per_codwords (int block_size, int num_codewords, int xsize,
 							       block_size,
 							       dev_dict,
 							       dev_pgm,
-							       dev_pgm_coded);
-		
-cudaThreadSynchronize();
+							       dev_pgm_coded, num_blocks_grid);
+
+      cudaThreadSynchronize ();
 
       // copy the vector with the pgm coded from dpu decive to host
       HANDLE_ERROR (cudaMemcpy
@@ -1361,6 +1381,7 @@ ucmatrix (int nrl, int nrh, int ncl, int nch)
     }
   return m;
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 ///   Copyright (C) 2008 by Nelson Carreira Francisco                        ///
 ///   eng.nelsito@gmail.com                                                  ///
