@@ -1,30 +1,28 @@
 #!/bin/bash
 
-# Clean coded data
-#rm -r Coded >/dev/null 2>&1
-#mkdir Coded
-#rm _Codificador/*.coded >/dev/null 2>&1
+# Clean coded data and create dirs
+rm -r Coded >/dev/null 2>&1
+mkdir Coded
+rm _Codificador/*.coded >/dev/null 2>&1
+mkdir Decoded >/dev/null 2>&1
 
 # MAKE codificador
 clear
 echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
 make clean
-make params
-#make gengetopt
-make codvector
-
+make
 
 # Run codvector
 echo -e "\n############### RUN Codvector ################\n"
 sh codvector.sh $1
 
-echo "\n\n############################################################"
+echo -e "\n\n############################################################"
 echo "################## OUTPUT match verifier ###################"
 echo "############################################################"
 cd ../OutputVerifier/
 sh verifier.sh $1
-echo "############################################################\n"
+echo -e "############################################################\n"
 
 
 # Clean .o files

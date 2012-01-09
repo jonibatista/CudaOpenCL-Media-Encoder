@@ -1,7 +1,5 @@
 CUDA_INSTALL_PATH ?= /usr/local/cuda
 
-#LD = `$LD_LIBRARY_PATH | awk '{print substr($1,2)}'`
-
 CXX := g++ 
 CC := gcc 
 LINK := g++ -fPIC 
@@ -19,49 +17,29 @@ CFLAGS += $(COMMONFLAGS)
 SOURCES1 = params.c
 OBJECTS1 = params.o
 
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
-
-PROC = `uname -m`
-PROC64 = "x86_64"
-PROC32 = "i686"
-
-#file:
-#	ifeq "$(PROC)" "$(PROC64)"
-#		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
-#		@echo " Strings are equal."
-#	else
-#		LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
-#		@echo " Strings differ."
-#	endif
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
 
 
-OBJS = main.cu.o
+OBJS = main.cu.o params.o
 TARGET = codvector
-LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(OBJECTS1) $(LIB_CUDA)
+LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(LIB_CUDA)
 
-all:
-	@echo "$(PROC)" "$(PROC64)"
-	@echo "$(LIB_CUDA)"
+
+std: $(OBJS)
+	$(LINKLINE)
 
 .SUFFIXES: .c .cu .o
 
-params:	$(OBJECTS1)
-	$(CC) -c ${SOURCES1}
-
-%.c.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+params.o: params.c
+	gcc -lm -c params.c
 
 %.cu.o: %.cu
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJS) Makefile
-	$(LINKLINE)
-
-clean:
-	rm -f $(BIN) *.o *.cu_o ${TARGET}
-
 docs: Doxyfile
 	doxygen Doxyfile
+clean:
+	rm -f $(BIN) *.o ${TARGET}
 
 gengetopt:
 	gengetopt --file-name=params --conf-parser --unamed-opts < params_opt.ggo 
