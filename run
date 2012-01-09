@@ -12,9 +12,6 @@ echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
 make clean
 make
-#make gengetopt
-#make codvector
-
 
 # Run codvector
 echo -e "\n############### RUN Codvector ################\n"
@@ -30,11 +27,14 @@ echo -e "############################################################\n"
 
 # Clean .o files
 cd ../_Codificador/
-make cleano >/dev/null 2>&1
+make clean >/dev/null 2>&1
 
 # Clean coded data
-# cd ..
-#rm -r Coded
-#rm _Codificador/*.coded >/dev/null 2>&1
+
+cd ..
+
+# Create tree output
+tree -o tree.out
+
 
 
