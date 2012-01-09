@@ -25,16 +25,7 @@ sh verifier.sh $1
 echo -e "############################################################\n"
 
 
-# Clean .o files
-cd ../_Codificador/
-make clean >/dev/null 2>&1
-
-# Clean coded data
-
-cd ..
-
-# Create tree output
-tree -o tree.out
-
-
-
+# generates the image
+cd ../_Descodificador
+make >/dev/null 2>&1
+./decvector.sh $1 >/dev/null 2>&1
