@@ -24,8 +24,12 @@ cd ../OutputVerifier/
 sh verifier.sh $1
 echo -e "############################################################\n"
 
-
 # generates the image
 cd ../_Descodificador
 make >/dev/null 2>&1
 ./decvector.sh $1 >/dev/null 2>&1
+
+
+# Create tree output
+cd ..
+tree -o tree.out
