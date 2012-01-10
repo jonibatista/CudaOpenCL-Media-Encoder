@@ -2,6 +2,7 @@
 ###########
 Coded/*.coded
 _Codificador/codvector
+Decoded/*
 
 # System Files #
 ################
@@ -10,6 +11,7 @@ _Codificador/codvector
 # Compiled source #
 ###################
 *.o
+*.out
 
 # Documentation content #
 #########################
