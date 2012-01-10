@@ -25,18 +25,11 @@ LINKLINE = $(CC) -o $(TARGET) $(OBJS) $(INCLUDES) $(LIBRARY)
 std: $(OBJS) 
 	$(LINKLINE)
 
-
-#.SUFFIXES: .c .o
-
 params.o: params.c
 	gcc -lm -c params.c
 
 %.c.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
-
-#$(TARGET): $(OBJS) Makefile
-#	$(LINKLINE)
-
 
 clean:
 	rm -f $(BIN) *.o ${TARGET}

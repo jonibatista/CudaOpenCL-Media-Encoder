@@ -12,29 +12,24 @@ echo -e "\n############### MAKE Codificador ################\n"
 cd _Codificador/
 make clean
 make
-#make gengetopt
-#make codvector
-
 
 # Run codvector
 echo -e "\n############### RUN Codvector ################\n"
 sh codvector.sh $1
 
-echo "\n\n############################################################"
+echo -e "\n\n############################################################"
 echo "################## OUTPUT match verifier ###################"
 echo "############################################################"
 cd ../OutputVerifier/
 sh verifier.sh $1
-echo "############################################################\n"
+echo -e "############################################################\n"
+
+# generates the image
+cd ../_Descodificador
+make >/dev/null 2>&1
+./decvector.sh $1 >/dev/null 2>&1
 
 
-# Clean .o files
-cd ../_Codificador/
-make cleano >/dev/null 2>&1
-
-# Clean coded data
-# cd ..
-#rm -r Coded
-#rm _Codificador/*.coded >/dev/null 2>&1
-
-
+# Create tree output
+cd ..
+tree -o tree.out
