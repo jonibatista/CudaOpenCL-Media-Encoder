@@ -17,7 +17,7 @@ CFLAGS += $(COMMONFLAGS)
 SOURCES1 = params.c
 OBJECTS1 = params.o
 
-LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib -lcudart
+LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
 
 
 OBJS = main.cu.o params.o
