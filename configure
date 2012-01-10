@@ -42,10 +42,33 @@ error()
     exit ${exit_code:-$EX_UNKNOWN}
 }
 
-[ "$#" -ne 1 ] || error "2 argument required"
-echo $1 | grep -E -q '^[0-9]+$' || error "Numeric argument required, $1 provided"
-echo $2 | grep -E -q '^[0-9]+$' || error  "Numeric argument required, $2 provided"
 
+if [ -z "$1" ] || [ -z "$2" ]; then
+	a=true
+fi
+
+if [ -z "$a" ]; then
+	echo $1 | grep -E -q '^[0-9]+$' || error "Numeric argument required, $1 provided"
+	echo $2 | grep -E -q '^[0-9]+$' || error "Numeric argument required, $2 provided"
+
+
+	# meta programming
+
+	new_line_block="const int G_BlocksPerGrid = "$1";"
+	new_line_threads="const int G_ThreadsPerBlock = "$2";"
+	cd _Codificador/
+	perl -pe "s/.*/$new_line_block/ if $. == 102" < main.cu > main.cu_temp #>/dev/null 2>&1
+	mv main.cu_temp main.cu
+	echo -e "Blocks defined: $1";
+
+	perl -pe "s/.*/$new_line_threads/ if $. == 103" < main.cu > main.cu_temp #>/dev/null 2>&1
+	mv main.cu_temp main.cu
+	echo -e "Threads defined: $2";
+fi
+
+#[ "$#" -ne 1 ] || error "2 argument required"
+
+cd ..
 
 src="documentation/"
 DOC_IMAGE="cuda.jpg"
@@ -73,18 +96,7 @@ make docs >/dev/null 2>&1
 
 
 
-# meta programming
 
-new_line_block="const int G_BlocksPerGrid = "$1";"
-new_line_threads="const int G_ThreadsPerBlock = "$2";"
-
-perl -pe "s/.*/$new_line_block/ if $. == 102" < main.cu > main.cu_temp #>/dev/null 2>&1
-mv main.cu_temp main.cu
-echo -e "Blocks defined: $1";
-
-perl -pe "s/.*/$new_line_threads/ if $. == 103" < main.cu > main.cu_temp #>/dev/null 2>&1
-mv main.cu_temp main.cu
-echo -e "Threads defined: $2";
 
 
 echo -e "\nDone.\n";
