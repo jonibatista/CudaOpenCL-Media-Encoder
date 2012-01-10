@@ -1,6 +1,7 @@
 # Folders #
 ###########
 Coded/*.coded
+Decoded/*
 
 # System Files #
 ################
@@ -9,6 +10,7 @@ Coded/*.coded
 # Compiled source #
 ###################
 *.o
+*.out
 
 # Documentation content #
 #########################
