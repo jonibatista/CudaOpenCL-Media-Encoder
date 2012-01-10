@@ -114,18 +114,17 @@ char *get_kernel_source_by_name (const char *file, size_t * kernel_size);
 ////////////////////////////////////////////////////////////////////////////////
 ///                               GLOBAL VARIABLES                           ///
 ////////////////////////////////////////////////////////////////////////////////
-const int G_BlocksPerGrid = 741376;	//
-const int G_ThreadsPerBlock = 64;	//MAX_T;;
+const int G_BlocksPerGrid = 741376;
+const int G_ThreadsPerBlock = 64;
+
 const char G_FILENAME_QUADRATIC_CL[] = "quadratic_kernel.cl";
+
 int *G_dic;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 ///                                  FUNCTIONS                               ///
 ////////////////////////////////////////////////////////////////////////////////
-
-
-
 int
 main (int argc, char *argv[])
 {
@@ -167,6 +166,11 @@ main (int argc, char *argv[])
 
   FILE *pointf_out;
 
+  printf ("=====================================================");
+  printf ("\n Global Work-Items do GPU: %d", G_ThreadsPerBlock * G_BlocksPerGrid);
+  printf ("\n Local Work-Items:  %d", G_ThreadsPerBlock);
+  printf ("\n Número de Work-Groups:  %d", G_BlocksPerGrid);
+  printf ("\n=====================================================");
 
   // validate parameters
   if (cmdline_parser (argc, argv, &args_info) != 0)
@@ -181,7 +185,12 @@ main (int argc, char *argv[])
   //Carrega dicionario
   load_dictionary (dic_name, &num_codewords, &block_size_x, &block_size_y);
   bits_index = ceil (log (num_codewords) / log (2));
+
   block_size = block_size_x * block_size_y;
+  int dict_statistics[num_codewords][block_size];
+  for (i = 0; i < num_codewords; i++)
+    for (j = 0; j < block_size; j++)
+      dict_statistics[i][j] = G_dic[i * block_size + j];
 
   original_block = (int *) calloc (block_size, sizeof (int));
   if (!original_block)
@@ -265,42 +274,15 @@ main (int argc, char *argv[])
   sort_pgm_blocks (v_pgm, v_pgm_sorted, block_size_x, block_size_y, xsize,
 		   ysize);
 
+
 //
-// calculate the quad error in the cpu
-//
-/*
-  float distortion = 0.0;
-
-  // calculate the quad error. (this will be executed on GPU)
-  for (i = 0; i < ysize * xsize; i += (block_size))
-    {
-      for (j = 0; j < block_size; j++)
-	{
-	  original_block[j] = v_pgm_sorted[i + j];
-	}
-      distortion = FLT_MAX;
-      int n;
-      for (n = 0; n < num_codewords; n++)
-	{			//Varre todos os elementos do codebook
-	  aux = quad_err (n, block_size, original_block);
-	  if (aux < distortion)
-	    {
-	      index = n;
-	      distortion = aux;
-	    }
-	}
-
-      v_pgm_coded[i / (block_size)] = index;
-    }
-*/
-
-// 
 // OPENCL STUFF
 //
 
   v_pgm_coded =
     kernel_execute_quadratic (v_pgm_sorted, ysize, xsize, block_size_x,
 			      block_size_y, num_codewords);
+
 /*
   for (i = 0; i < xsize * ysize / block_size; i++)
     {
@@ -312,18 +294,20 @@ main (int argc, char *argv[])
 // END OPENCL STUFF
 //
 
-  // verificar esta código... 
+// estatistics
   for (i = 0; i < ysize; i += block_size_y)
     {
       for (j = 0; j < xsize; j += block_size_x)
 	{
+	  index =
+	    v_pgm_coded[(i / block_size_y) * (xsize / block_size_x) +
+			(j / block_size_x)];
 	  for (i1 = 0; i1 < block_size_y; i1++)
 	    {
 	      for (j1 = 0; j1 < block_size_x; j1++)
 		{
 		  image_out[i + i1][j + j1] =
-		    G_dic[v_pgm_coded[i / block_size_x] * block_size +
-			  (i1 * block_size_x + j1)];
+		    dict_statistics[index][i1 * block_size_x + j1];
 		}
 	    }
 
@@ -374,8 +358,6 @@ main (int argc, char *argv[])
   printf ("\n-----------------------------------------------------\n\n");
 
 
-  //write_f_pgm(image_out, *ysize, *xsize, "Testeout.pgm");
-
   fclose (pointf_out);
 
   // now free the memory
@@ -421,7 +403,7 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
   char *kernel_src;
   int block_size = block_size_x * block_size_y;
   int num_blocks = ysize * xsize / block_size;
-  
+
 // create the vector that will contain the coded pgm
   v_output = int_vector (ysize / block_size_y, xsize / block_size_x);
 
@@ -483,12 +465,14 @@ kernel_execute_quadratic (int *v_pgm, int ysize, int xsize, int block_size_x,
 
 // Create memory buffers on the device for each vector 
   cl_mem pgm_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
-				       num_blocks * block_size * sizeof (int), NULL,
+				       num_blocks * block_size * sizeof (int),
+				       NULL,
 				       &ret);
   checkErr (ret, "Unable to create pgm buffer.");
 
   cl_mem dict_mem_obj = clCreateBuffer (context, CL_MEM_READ_ONLY,
-					num_codewords * block_size * sizeof (int), NULL,
+					num_codewords * block_size *
+					sizeof (int), NULL,
 					&ret);
   checkErr (ret, "Unable to create dictionary buffer.");
 
