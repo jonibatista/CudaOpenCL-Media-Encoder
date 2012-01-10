@@ -38,7 +38,6 @@ do
 		echo -e  "\tMATCH - ${File}_dic_1024_4x4 !";
 	else 
 		echo -e "\tDOES NOT MATCH - ${File}_dic_1024_4x4 !";
-		exit 0;
 	fi
 	
 done
